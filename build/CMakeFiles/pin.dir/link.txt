@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/pin.dir/src/main.cpp.o CMakeFiles/pin.dir/src/Pin.cpp.o CMakeFiles/pin.dir/src/card.cpp.o -o pin 
