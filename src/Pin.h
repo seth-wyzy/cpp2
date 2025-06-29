@@ -40,6 +40,7 @@ public:
     void takeTrick();
     void doTrickTaking();
     void tPoints();
+    void checkMeld(const std::vector<card> currTrick, const int startPlayer);
 
 
     

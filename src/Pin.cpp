@@ -427,9 +427,14 @@ void Pin::sortHands() {
         return a.rank < b.rank;
     };
 
-    // sort each hand in allHands[0..3]
+    // sort each hand in allHands[0-3]
     for (int i = 0; i < 4; ++i) {
-        auto handPtr = allHands[i];
+        std::vector<card>* handPtr = allHands[i];
         std::sort(handPtr->begin(), handPtr->end(), cardLess);
     }
+}
+void Pin::checkMeld(const std::vector<card> currTrick, const int startPlayer) {
+    if (currTrick[1].suit != currTrick[0].suit && currTrick[1].suit != trumpSuit) {
+        // check if there are any trump left
+    } // check the card player is higher than the previous ones
 }
