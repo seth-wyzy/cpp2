@@ -355,13 +355,16 @@ std::map<int, card> Pin::trick() { // this currently assumes no re nigs, but log
 
 int Pin::hand_winner() {
     trick_cards = trick();
-    int winner = -1;
-    for (int i = tWinner; i < tWinner+4; i++) {
+    if (!checkMeld(trick_cards, tWinner)) return -1;
+    std::pair<int, card> currWinner = {tWinner, trick_cards[tWinner]};
+    for (int i = tWinner+1; i < tWinner+3; i++) {
         int h = i % 4;
-        // TODO How do I implement the trick winning logic? Like there are so many things to check for what card wins, and we
-        // TODO have to keep track of who threw the card cause of ties and "losing" hands
+        if ((trick_cards[h].suit == currWinner.second.suit && trick_cards[h].rank > currWinner.second.rank)
+            || trick_cards[h].suit == trumpSuit && currWinner.second.suit != trumpSuit) {
+            currWinner = {h, trick_cards[h]};
+        }
+    return currWinner.first;
     }
-
 }
 
 void Pin::takeTrick(){
@@ -419,6 +422,7 @@ void Pin::print_person(int per) { // prints whos turn it is based on an integer 
             std::cout << "Invalid Person\n";
     }   
 }
+
 void Pin::sortHands() {
     // lambda to compare two cards: suit first, then rank
     auto cardLess = [](const card &a, const card &b) {
@@ -433,62 +437,63 @@ void Pin::sortHands() {
         std::sort(handPtr->begin(), handPtr->end(), cardLess);
     }
 }
-bool Pin::checkMeld(const std::vector<card> currTrick, const int startPlayer) {
-    if (currTrick[1].suit != currTrick[0].suit && currTrick[1].suit != trumpSuit) {
+
+bool Pin::checkMeld(std::map<int, card> currTrick, int startPlayer) {
+    if (currTrick[(startPlayer+1)%4].suit != currTrick[(startPlayer+0)%4].suit && currTrick[1].suit != trumpSuit) {
         for (const auto& card: *allHands[(startPlayer+1)%4]) {
             if (card.suit == trumpSuit) {
                 return false;
             }
         }
-    } else if (currTrick[1].rank <= currTrick[0].rank) {
+    } else if (currTrick[(startPlayer+1)%4].rank <= currTrick[(startPlayer+0)%4].rank) {
         for (const auto& card: *allHands[(startPlayer+1)%4]) {
-            if (card.suit == currTrick[0].suit && card.rank > currTrick[0].rank) {
+            if (card.suit == currTrick[(startPlayer+0)%4].suit && card.rank > currTrick[(startPlayer+0)%4].rank) {
                 return false;
             }
         }
     }
     // next person
-    if (currTrick[2].suit != currTrick[0].suit && currTrick[2].suit != trumpSuit) {
+    if (currTrick[(startPlayer+2)%4].suit != currTrick[(startPlayer+0)%4].suit && currTrick[(startPlayer+2)%4].suit != trumpSuit) {
         for (const auto& card: *allHands[(startPlayer+2)%4]) {
             if (card.suit == trumpSuit) {
                 return false;
             }
         }
-    } else if (currTrick[2].rank <= currTrick[0].rank) {
+    } else if (currTrick[(startPlayer+2)%4].rank <= currTrick[(startPlayer+0)%4].rank) {
         for (const auto& card: *allHands[(startPlayer+2)%4]) {
-            if (card.suit == currTrick[0].suit && card.rank > currTrick[0].rank) {
+            if (card.suit == currTrick[(startPlayer+0)%4].suit && card.rank > currTrick[(startPlayer+0)%4].rank) {
                 return false;
             }
         }
-    } else if (currTrick[2].rank <= currTrick[1].rank) {
+    } else if (currTrick[(startPlayer+2)%4].rank <= currTrick[(startPlayer+1)%4].rank) {
         for (const auto& card: *allHands[(startPlayer+2)%4]) {
-            if (card.suit == currTrick[1].suit && card.rank > currTrick[1].rank) {
+            if (card.suit == currTrick[(startPlayer+1)%4].suit && card.rank > currTrick[(startPlayer+1)%4].rank) {
                 return false;
             }
         }
     }
     // final person
-    if (currTrick[3].suit != currTrick[0].suit && currTrick[3].suit != trumpSuit) {
+    if (currTrick[(startPlayer+3)%4].suit != currTrick[(startPlayer+0)%4].suit && currTrick[(startPlayer+3)%4].suit != trumpSuit) {
         for (const auto& card: *allHands[(startPlayer+3)%4]) {
             if (card.suit == trumpSuit) {
                 return false;
             }
         }
-    } else if (currTrick[3].rank <= currTrick[0].rank) {
+    } else if (currTrick[(startPlayer+3)%4].rank <= currTrick[(startPlayer+0)%4].rank) {
         for (const auto& card: *allHands[(startPlayer+3)%4]) {
-            if (card.suit == currTrick[0].suit && card.rank > currTrick[0].rank) {
+            if (card.suit == currTrick[(startPlayer+0)%4].suit && card.rank > currTrick[(startPlayer+0)%4].rank) {
                 return false;
             }
         }
-    } else if (currTrick[3].rank <= currTrick[1].rank) {
+    } else if (currTrick[(startPlayer+3)%4].rank <= currTrick[(startPlayer+1)%4].rank) {
         for (const auto& card: *allHands[(startPlayer+3)%4]) {
-            if (card.suit == currTrick[1].suit && card.rank > currTrick[1].rank) {
+            if (card.suit == currTrick[(startPlayer+1)%4].suit && card.rank > currTrick[(startPlayer+1)%4].rank) {
                 return false;
             }
         }
-    } else if (currTrick[3].rank <= currTrick[2].rank) {
+    } else if (currTrick[(startPlayer+3)%4].rank <= currTrick[(startPlayer+2)%4].rank) {
         for (const auto& card: *allHands[(startPlayer+3)%4]) {
-            if (card.suit == currTrick[2].suit && card.rank > currTrick[2].rank) {
+            if (card.suit == currTrick[(startPlayer+2)%4].suit && card.rank > currTrick[(startPlayer+2)%4].rank) {
                 return false;
             }
         }
