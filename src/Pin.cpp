@@ -372,11 +372,13 @@ void Pin::takeTrick(){
         case 0: case 2:
             for (const auto& it: trick_cards){
                 usCards.push_back(it.second);
+                lastTrick = true;
             }
             break;
         case 1: case 3:
             for (const auto& it: trick_cards) {
                 themCards.push_back(it.second);
+                lastTrick = false;
             }
             break;
     }
@@ -400,6 +402,11 @@ void Pin::tPoints() {
         if (it.rank >= 13) {
             themPoints++;
         }
+    }
+    if (lastTrick) {
+        usPoints++;
+    } else {
+        themPoints++;
     }
 }
 
