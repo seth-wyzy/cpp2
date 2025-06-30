@@ -433,8 +433,65 @@ void Pin::sortHands() {
         std::sort(handPtr->begin(), handPtr->end(), cardLess);
     }
 }
-void Pin::checkMeld(const std::vector<card> currTrick, const int startPlayer) {
+bool Pin::checkMeld(const std::vector<card> currTrick, const int startPlayer) {
     if (currTrick[1].suit != currTrick[0].suit && currTrick[1].suit != trumpSuit) {
-        // check if there are any trump left
-    } // check the card player is higher than the previous ones
+        for (const auto& card: *allHands[(startPlayer+1)%4]) {
+            if (card.suit == trumpSuit) {
+                return false;
+            }
+        }
+    } else if (currTrick[1].rank <= currTrick[0].rank) {
+        for (const auto& card: *allHands[(startPlayer+1)%4]) {
+            if (card.suit == currTrick[0].suit && card.rank > currTrick[0].rank) {
+                return false;
+            }
+        }
+    }
+    // next person
+    if (currTrick[2].suit != currTrick[0].suit && currTrick[2].suit != trumpSuit) {
+        for (const auto& card: *allHands[(startPlayer+2)%4]) {
+            if (card.suit == trumpSuit) {
+                return false;
+            }
+        }
+    } else if (currTrick[2].rank <= currTrick[0].rank) {
+        for (const auto& card: *allHands[(startPlayer+2)%4]) {
+            if (card.suit == currTrick[0].suit && card.rank > currTrick[0].rank) {
+                return false;
+            }
+        }
+    } else if (currTrick[2].rank <= currTrick[1].rank) {
+        for (const auto& card: *allHands[(startPlayer+2)%4]) {
+            if (card.suit == currTrick[1].suit && card.rank > currTrick[1].rank) {
+                return false;
+            }
+        }
+    }
+    // final person
+    if (currTrick[3].suit != currTrick[0].suit && currTrick[3].suit != trumpSuit) {
+        for (const auto& card: *allHands[(startPlayer+3)%4]) {
+            if (card.suit == trumpSuit) {
+                return false;
+            }
+        }
+    } else if (currTrick[3].rank <= currTrick[0].rank) {
+        for (const auto& card: *allHands[(startPlayer+3)%4]) {
+            if (card.suit == currTrick[0].suit && card.rank > currTrick[0].rank) {
+                return false;
+            }
+        }
+    } else if (currTrick[3].rank <= currTrick[1].rank) {
+        for (const auto& card: *allHands[(startPlayer+3)%4]) {
+            if (card.suit == currTrick[1].suit && card.rank > currTrick[1].rank) {
+                return false;
+            }
+        }
+    } else if (currTrick[3].rank <= currTrick[2].rank) {
+        for (const auto& card: *allHands[(startPlayer+3)%4]) {
+            if (card.suit == currTrick[2].suit && card.rank > currTrick[2].rank) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
