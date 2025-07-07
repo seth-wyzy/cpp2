@@ -40,7 +40,7 @@ public:
     void takeTrick();
     void doTrickTaking();
     void tPoints();
-    bool checkMeld(std::map<int, card> currTrick, int startPlayer);
+    bool checkTricks(std::map<int, card> currTrick, int startPlayer);
 
 
     

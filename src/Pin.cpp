@@ -26,7 +26,7 @@ Pin::Pin() {
     meldHands[2] = &meld_hand;
     meldHands[3] = &meld_west;
 
-    initilize_game();
+    // initilize_game(); // also prints your hand 
     // bet = bidding();
 
     // choose_cards(*allHands[2], *meldHands[2]);
@@ -45,7 +45,20 @@ Pin::Pin() {
     // sortHands();
     // count_meld(hand);
     // doTrickTaking();
-    
+    for (int i = dealer; i < dealer+4; i++) { // this one has no bidding trump is 1 (diamonds)
+        int h = i % 4;
+        std::cout << h << "\n";
+        trumpSuit = 1;
+        shuffleDeck();
+        clear_hands();
+        deal_hands();
+        print_hand(hand);
+        choose_cards(hand, meld_hand);
+        count_meld(meld_hand);
+        // TODO figure out how to use your trick taking functionos in the right order
+        // ? trick counting logic is there, not sure if it is in the trick taking function
+
+    }
 }
 
 // Member functions definitions
@@ -355,7 +368,7 @@ std::map<int, card> Pin::trick() { // this currently assumes no re nigs, but log
 
 int Pin::hand_winner() {
     trick_cards = trick();
-    if (!checkMeld(trick_cards, tWinner)) return -1;
+    if (!checkTricks(trick_cards, tWinner)) return -1;
     std::pair<int, card> currWinner = {tWinner, trick_cards[tWinner]};
     for (int i = tWinner+1; i < tWinner+3; i++) {
         int h = i % 4;
@@ -445,7 +458,7 @@ void Pin::sortHands() {
     }
 }
 
-bool Pin::checkMeld(std::map<int, card> currTrick, int startPlayer) {
+bool Pin::checkTricks(std::map<int, card> currTrick, int startPlayer) {
     if (currTrick[(startPlayer+1)%4].suit != currTrick[(startPlayer+0)%4].suit && currTrick[1].suit != trumpSuit) {
         for (const auto& card: *allHands[(startPlayer+1)%4]) {
             if (card.suit == trumpSuit) {
