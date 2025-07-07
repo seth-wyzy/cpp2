@@ -30,7 +30,7 @@ Pin::Pin() {
     // bet = bidding();
 
     // choose_cards(*allHands[2], *meldHands[2]);
-    trumpSuit = 0;
+    // trumpSuit = 0;
     // hand.clear();
     // card JD  = {11, 1, 0};
     // card JD2 = {12, 1, 1};
@@ -42,10 +42,10 @@ Pin::Pin() {
     // hand.push_back(QS2);
     // std::cout << std::endl;
     // print_hand(hand);
-    sortHands();
-    count_meld(hand);
-    doTrickTaking();
-
+    // sortHands();
+    // count_meld(hand);
+    // doTrickTaking();
+    
 }
 
 // Member functions definitions
@@ -363,8 +363,8 @@ int Pin::hand_winner() {
             || trick_cards[h].suit == trumpSuit && currWinner.second.suit != trumpSuit) {
             currWinner = {h, trick_cards[h]};
         }
-    return currWinner.first;
     }
+    return currWinner.first;
 }
 
 void Pin::takeTrick(){

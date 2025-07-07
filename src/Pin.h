@@ -16,7 +16,7 @@ public:
     Pin();
 
     // Methods
-    void initialize_deck();
+    void initialize_deck();  
     void shuffleDeck();
     void choose_dealer();
     void print_deck();
@@ -40,7 +40,7 @@ public:
     void takeTrick();
     void doTrickTaking();
     void tPoints();
-    void checkMeld(const std::vector<card> currTrick, const int startPlayer);
+    bool checkMeld(std::map<int, card> currTrick, int startPlayer);
 
 
     
@@ -67,7 +67,7 @@ private:
     
     
     int tWinner = 0;
-
+    bool lastTrick = false;
     int dealer = 0;
     int round = 0;
     int usPoints = 0;
