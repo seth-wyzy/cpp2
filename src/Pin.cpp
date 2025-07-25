@@ -45,19 +45,21 @@ Pin::Pin() {
     // sortHands();
     // count_meld(hand);
     // doTrickTaking();
-    for (int i = dealer; i < dealer+4; i++) { // this one has no bidding trump is 1 (diamonds)
+    for (int i = dealer; i < dealer+4; i++) { 
         int h = i % 4;
-        std::cout << h << "\n";
-        trumpSuit = 1;
+        std::cout << "Dealer: ";
+        print_person(h);
         shuffleDeck();
         clear_hands();
         deal_hands();
+        sortHands();
+        std::cout << "Your Hand: \n";
+        print_hand(hand);
+        int winningBid = bidding(); // i don't think that the winner of the bid gets to start the trick taking
         print_hand(hand);
         choose_cards(hand, meld_hand);
         count_meld(meld_hand);
-        // TODO figure out how to use your trick taking functionos in the right order
-        // ? trick counting logic is there, not sure if it is in the trick taking function
-
+        doTrickTaking();
     }
 }
 
