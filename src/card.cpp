@@ -81,6 +81,8 @@ std::string card::p_rank() const {
     
 }
 
+
+
 std::string card::p_suit() const {
     switch (suit) {
         case 0:
