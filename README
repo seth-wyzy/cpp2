@@ -1,1 +1,4 @@
-testing something
+Activate The virtual environment for the testing server:
+source /home/seth/cpp2/networkTest/myenv/bin/activate
+
+deactivate to deactivate
