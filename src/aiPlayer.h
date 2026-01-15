@@ -4,17 +4,22 @@
 #include "card.h"
 #include <vector>
 
-class aiPlayer {
+
+class AIPlayer {
 public:
     //constructor
-    aiPlayer(int pos);
+    AIPlayer(int pos);
 
     void startRound(std::vector<card> deltHand);
-    card chooseMove(std::vector<card> currTrick);
+    card chooseMove(std::vector<card> currTrick, bool leader, int trump);
+    std::vector<card> getMyHand() {return myHand;};
+    void setMeld(int m) {meld = m;};
+    
 
 private:
     int position;
-    int team;
+    int meld;
+    bool team; // true if us, false if them
     std::vector<card> myHand;
 
 };
