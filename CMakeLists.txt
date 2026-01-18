@@ -11,6 +11,7 @@ add_executable(pin
     src/main.cpp 
     src/Pin.cpp
     src/card.cpp
+    src/aiPlayer.cpp
 )
 
 

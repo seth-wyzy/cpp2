@@ -16,5 +16,11 @@
   "command": "/usr/bin/clang++ -I/home/seth/cpp2/include -g -std=gnu++17 -o CMakeFiles/pin.dir/src/card.cpp.o -c /home/seth/cpp2/src/card.cpp",
   "file": "/home/seth/cpp2/src/card.cpp",
   "output": "CMakeFiles/pin.dir/src/card.cpp.o"
+},
+{
+  "directory": "/home/seth/cpp2/build",
+  "command": "/usr/bin/clang++ -I/home/seth/cpp2/include -g -std=gnu++17 -o CMakeFiles/pin.dir/src/aiPlayer.cpp.o -c /home/seth/cpp2/src/aiPlayer.cpp",
+  "file": "/home/seth/cpp2/src/aiPlayer.cpp",
+  "output": "CMakeFiles/pin.dir/src/aiPlayer.cpp.o"
 }
 ]

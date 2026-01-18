@@ -70,6 +70,13 @@ build CMakeFiles/pin.dir/src/card.cpp.o: CXX_COMPILER__pin_unscanned_Debug /home
   OBJECT_DIR = CMakeFiles/pin.dir
   OBJECT_FILE_DIR = CMakeFiles/pin.dir/src
 
+build CMakeFiles/pin.dir/src/aiPlayer.cpp.o: CXX_COMPILER__pin_unscanned_Debug /home/seth/cpp2/src/aiPlayer.cpp || cmake_object_order_depends_target_pin
+  DEP_FILE = CMakeFiles/pin.dir/src/aiPlayer.cpp.o.d
+  FLAGS = -g -std=gnu++17
+  INCLUDES = -I/home/seth/cpp2/include
+  OBJECT_DIR = CMakeFiles/pin.dir
+  OBJECT_FILE_DIR = CMakeFiles/pin.dir/src
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target pin
@@ -78,7 +85,7 @@ build CMakeFiles/pin.dir/src/card.cpp.o: CXX_COMPILER__pin_unscanned_Debug /home
 #############################################
 # Link the executable pin
 
-build pin: CXX_EXECUTABLE_LINKER__pin_Debug CMakeFiles/pin.dir/src/main.cpp.o CMakeFiles/pin.dir/src/Pin.cpp.o CMakeFiles/pin.dir/src/card.cpp.o
+build pin: CXX_EXECUTABLE_LINKER__pin_Debug CMakeFiles/pin.dir/src/main.cpp.o CMakeFiles/pin.dir/src/Pin.cpp.o CMakeFiles/pin.dir/src/card.cpp.o CMakeFiles/pin.dir/src/aiPlayer.cpp.o
   FLAGS = -g
   OBJECT_DIR = CMakeFiles/pin.dir
   POST_BUILD = :

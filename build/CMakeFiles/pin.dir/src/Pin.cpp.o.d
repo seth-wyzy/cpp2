@@ -197,4 +197,4 @@ CMakeFiles/pin.dir/src/Pin.cpp.o: /home/seth/cpp2/src/Pin.cpp \
  /usr/include/c++/13/bits/stl_map.h \
  /usr/include/c++/13/bits/stl_multimap.h \
  /usr/include/c++/13/bits/erase_if.h /home/seth/cpp2/src/card.h \
- /usr/include/c++/13/bitset
+ /usr/include/c++/13/bitset /home/seth/cpp2/src/aiPlayer.h
