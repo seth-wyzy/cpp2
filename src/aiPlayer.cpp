@@ -6,12 +6,20 @@ AIPlayer::AIPlayer(int pos) {
         this->team = true; // us
     else
         this->team = false; // them
+    hMeld = 0;
+    dMeld = 0;
+    cMeld = 0;
+    sMeld = 0;
 }
 /*
 * This should be used at the start of each round to initilize the hand, meld can be choosen
 */
 void AIPlayer::startRound(std::vector<card> deltHand) { 
     this->myHand = deltHand;
+    hMeld = 0;
+    dMeld = 0;
+    cMeld = 0;
+    sMeld = 0;
 }
 
 
@@ -58,3 +66,18 @@ card AIPlayer::chooseMove(std::vector<card> currTrick, bool leader, int trump) {
     // ! like right now this assumes the leader will always win, but we know that that is not always the case
 
 }
+
+int AIPlayer::chooseBid(int currBid) {
+    int maxBid = meld+10;
+    if (currBid < maxBid) 
+        return currBid+1;
+    return -1;
+}
+
+int AIPlayer::chooseTrump() {
+    return 0; // TODO fix this to figure out the ai choosing a trump, might have to happen in the Pin fil 
+
+}
+
+
+

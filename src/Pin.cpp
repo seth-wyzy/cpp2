@@ -1,4 +1,5 @@
 #include "Pin.h"
+#include "aiPlayer.h"
 #include <exception>
 #include <iostream>
 #include <ostream>
@@ -25,6 +26,10 @@ Pin::Pin() {
     meldHands[1] = &meld_east;
     meldHands[2] = &meld_hand;
     meldHands[3] = &meld_west;
+
+    playerArray[0] = new AIPlayer(0);
+    playerArray[1] = new AIPlayer(1);
+    playerArray[3] = new AIPlayer(3);
 
     // initilize_game(); // also prints your hand 
     // bet = bidding();
@@ -63,7 +68,7 @@ Pin::Pin() {
     }
 }
 
-// Member functions definitions
+// Member function definitions
 void Pin::initialize_deck() {
     for (int repeat = 0; repeat < 2; ++repeat) {
         for (int r = 9; r <= 15; r++) {
@@ -226,7 +231,7 @@ void Pin::choose_all_cards(){
     }
 }
 
-int Pin::count_meld(std::vector<card>& hand){ // should only pass meld hand in for actual playing becuase we want that element
+int Pin::count_meld(std::vector<card> hand){ // should only pass meld hand in for actual playing becuase we want that element
 /*
     Pinochle 4
     Double 30
@@ -266,7 +271,7 @@ int Pin::count_meld(std::vector<card>& hand){ // should only pass meld hand in f
         std::cout << "Run in Trump: +15" << std::endl;
         meldPoints += 15;
     }
-    // Marrige
+    // Marriage
     for (int s = 0; s <= 3; ++s) {
         if (suitRank[s][13] > 0 && suitRank[s][12] > 0) {
             int pts = (s == trumpSuit) ? 4 : 2;
@@ -521,4 +526,129 @@ bool Pin::checkTricks(std::map<int, card> currTrick, int startPlayer) {
         }
     }
     return true;
+}
+
+int Pin::aiMeld(AIPlayer& ai) {
+    int meld =  count_meld(ai.getMyHand());
+    ai.setMeld(meld);
+    return meld;
+}
+
+int Pin::allAiMeld() {
+    for (int i = 0; i < 4; i++) {
+        if (i == 3) continue;
+        aiMeld(*playerArray[i]);
+    }
+}
+
+void Pin::suitAi(AIPlayer& ai) {
+    std::vector<card> hand = ai.getMyHand();
+    ai.sethMeld(count_meld(hand, 0)); 
+    ai.setdMeld(count_meld(hand, 1)); 
+    ai.setcMeld(count_meld(hand, 2));
+    ai.setsMeld(count_meld(hand, 3)); 
+}
+
+void Pin::allSuitAi() {
+    for (int i = 0; i < 4; i++) {
+        if (i == 3) continue;
+        suitAi(*playerArray[i]);
+    }
+}
+
+
+int Pin::count_meld(std::vector<card> hand, int trump){ // should only pass meld hand in for actual playing becuase we want that element
+/*
+    Pinochle 4
+    Double 30
+    Around:
+        Ace 10
+        King 8
+        Queen 6
+        Jack 4
+    Marriage 2/4
+    Run 15
+    9_t 1
+*/
+    // rank of suit
+    // Clubs, Dia, Hearts, Spades
+    std::map<int, std::map<int, int>> suitRank;
+    std::map<int, int> suits;
+    std::map<int, int> ranks;
+
+    for (const auto& card : hand) {
+        suitRank[card.suit][card.rank]++;
+        suits[card.suit]++;
+        ranks[card.rank]++;
+    }
+    int meldPoints = 0;
+
+    
+    // Run in trump: A 10 K Q J (15 14 13 12 11)
+    std::vector<int> run = {15, 14, 13, 12, 11};
+    bool hasRun = true;
+    for (int r : run) {
+        if (suitRank[trump][r] < 1) {
+            hasRun = false;
+            break;
+        }
+    }
+    if (hasRun) {
+        std::cout << "Run in Trump: +15" << std::endl;
+        meldPoints += 15;
+    }
+    // Marriage
+    for (int s = 0; s <= 3; ++s) {
+        if (suitRank[s][13] > 0 && suitRank[s][12] > 0) {
+            int pts = (s == trump) ? 4 : 2;
+            card che = {0, s,0};
+            std::cout << "Marriage in " << che.p_suit() << ": +" << pts << std::endl;
+            if (suitRank[s][13] > 1 && suitRank[s][12] > 1) pts *= 2;
+            meldPoints += pts;
+        }
+    }
+    std::map<int, int> aroundPoints = {
+        {15, 10}, // Aces
+        {13, 8},  // Kings
+        {12, 6},  // Queens
+        {11, 4}   // Jacks
+    };
+    for (auto [r, points] : aroundPoints) {
+        bool hasAll = true;
+        for (int s = 0; s < 4; ++s) {
+            if (suitRank[s][r] == 0) {
+                hasAll = false;
+                break;
+            }
+        }
+        card check = {r,0,0};
+        if (hasAll) {
+            std::cout << check.p_rank() <<"s around: +" << points << "\n";
+            meldPoints += points;
+        }
+    }
+
+        // Pinochle: Q♠ (12,3) + J♦ (11,1)
+        int q_spades = suitRank[3][12];
+        int j_diamonds = suitRank[1][11];
+        int pinochles = std::min(q_spades, j_diamonds);
+        if (pinochles >= 1) {
+            int pts = (pinochles == 2) ? 30 : 4 * pinochles;
+            std::cout << (pinochles == 2 ? "Double " : "") << "Pinochle: +" << pts << "\n";
+            meldPoints += pts;
+        }
+    
+        // 9 of trump
+        if (suitRank[trump][9] > 0) {
+            int p = suitRank[trump][9];
+            std::cout << "9 of trump x" << p << std::endl;
+            meldPoints += p;
+        }
+    
+        std::cout << "Total Meld Points: " << meldPoints << std::endl;
+    
+
+        return meldPoints;
+    
+    
 }

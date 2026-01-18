@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <map>
 #include "card.h"
+#include "aiPlayer.h"
+
 
 // Class definition for Pin
 class Pin {
@@ -28,7 +30,8 @@ public:
     void meld();
     int bidding();
     void choose_cards(std::vector<card>& hand, std::vector<card>& meld_hand);
-    int count_meld(std::vector<card>& hand);
+    int count_meld(std::vector<card> hand);
+    int count_meld(std::vector<card> hand, int trump);
     void all_count_meld();
     void choose_all_cards();
     std::map<int, card> trick();
@@ -41,6 +44,11 @@ public:
     void doTrickTaking();
     void tPoints();
     bool checkTricks(std::map<int, card> currTrick, int startPlayer);
+    int aiMeld(AIPlayer& ai);
+    int allAiMeld();
+    void suitAi(AIPlayer& ai);
+    void allSuitAi();
+    
 
 
     
@@ -64,6 +72,8 @@ private:
     std::vector<card> usCards;
     std::vector<card> themCards;
     std::vector<card> currTrick;
+
+    std::map<int, AIPlayer*> playerArray; // 0 is north, 1 is east, 2 is you (not used), 3 is west
     
     
     int tWinner = 0;
