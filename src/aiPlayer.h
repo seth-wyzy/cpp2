@@ -21,13 +21,15 @@ public:
     void setdMeld(int m) {dMeld = m;};
     void setsMeld(int m) {sMeld = m;};
     void setcMeld(int m) {cMeld = m;};
-
+    void choosePersonalTrump();
 private:
     int position;
-    int meld;
+    
     bool team; // true if us, false if them
     std::vector<card> myHand;
-
+    int meld;
+    int biddingMeld;
+    int personalTrump;
     int hMeld;
     int dMeld;
     int sMeld;

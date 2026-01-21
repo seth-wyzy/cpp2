@@ -547,6 +547,7 @@ void Pin::suitAi(AIPlayer& ai) {
     ai.setdMeld(count_meld(hand, 1)); 
     ai.setcMeld(count_meld(hand, 2));
     ai.setsMeld(count_meld(hand, 3)); 
+    ai.choosePersonalTrump(); // picks the largest one for bidding purposes
 }
 
 void Pin::allSuitAi() {

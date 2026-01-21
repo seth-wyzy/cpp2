@@ -67,17 +67,38 @@ card AIPlayer::chooseMove(std::vector<card> currTrick, bool leader, int trump) {
 
 }
 
-int AIPlayer::chooseBid(int currBid) {
-    int maxBid = meld+10;
+int AIPlayer::chooseBid(int currBid) { // use the highest meld for this
+    int maxBid = biddingMeld+10;
     if (currBid < maxBid) 
         return currBid+1;
     return -1;
 }
 
 int AIPlayer::chooseTrump() {
-    return 0; // TODO fix this to figure out the ai choosing a trump, might have to happen in the Pin fil 
-
+    return personalTrump;
 }
 
+//hmeld
+//dmeld
+//smeld
+//cmeld
+
+void AIPlayer::choosePersonalTrump() {
+    biddingMeld = hMeld;
+    personalTrump = 0;
+    if (dMeld > biddingMeld) {
+        biddingMeld = dMeld;
+        personalTrump = 1;
+    }
+    if (sMeld > biddingMeld) {
+        biddingMeld = sMeld;
+        personalTrump = 2;
+    }
+    if (cMeld > biddingMeld) {
+        biddingMeld = cMeld;
+        personalTrump = 3;
+    }
+
+}
 
 
