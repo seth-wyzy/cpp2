@@ -61,8 +61,13 @@ const Card: React.FC<{ card: CardData; onClick?: () => void; selected?: boolean;
 
 function App() {
   const [gameState, setGameState] = useState<GameState | null>(null);
-  const [mySeat, setMySeat] = useState<number | null>(null);
-  const [myUsername, setMyUsername] = useState<string>("");
+  const [mySeat, setMySeat] = useState<number | null>(() => {
+    const saved = localStorage.getItem('pinochle_seat');
+    return saved !== null ? parseInt(saved) : null;
+  });
+  const [myUsername, setMyUsername] = useState<string>(() => {
+    return localStorage.getItem('pinochle_username') || "";
+  });
   const [customBid, setCustomBid] = useState<number>(21);
   const [message, setMessage] = useState<string | null>(null);
   const [selectedMeldIndices, setSelectedMeldIndices] = useState<number[]>([]);
@@ -79,6 +84,18 @@ function App() {
   
   const ws = useRef<WebSocket | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem('pinochle_username', myUsername);
+  }, [myUsername]);
+
+  useEffect(() => {
+    if (mySeat !== null) {
+      localStorage.setItem('pinochle_seat', mySeat.toString());
+    } else {
+      localStorage.removeItem('pinochle_seat');
+    }
+  }, [mySeat]);
 
   const fetchState = async () => {
     try {
@@ -198,6 +215,30 @@ function App() {
     }
   };
 
+  const leaveSeat = async () => {
+    if (mySeat !== null) {
+      await fetch(`${API_BASE}/lobby/vacate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seat_index: mySeat, name: myUsername })
+      });
+    }
+    setMySeat(null);
+    setMessage(null);
+    localStorage.removeItem('pinochle_seat');
+  };
+
+  const resetServer = async () => {
+    if (window.confirm("This will reset the game for EVERYONE. Are you sure?")) {
+      const res = await fetch(`${API_BASE}/game/new`, { method: 'POST' });
+      if (res.ok) {
+        setGameState(await res.json());
+        setMySeat(null);
+        localStorage.removeItem('pinochle_seat');
+      }
+    }
+  };
+
   const startMatch = async () => {
     const res = await fetch(`${API_BASE}/game/start`, { method: 'POST' });
     if (res.ok) setGameState(await res.json());
@@ -307,8 +348,8 @@ function App() {
               <button 
                 key={i} 
                 onClick={() => joinGame(i)} 
-                disabled={gameState.seat_assignments[i] !== null}
-                style={{padding: 20, background: gameState.seat_assignments[i] ? '#7f8c8d' : '#27ae60'}}
+                disabled={gameState.seat_assignments[i] !== null && gameState.seat_assignments[i] !== myUsername}
+                style={{padding: 20, background: gameState.seat_assignments[i] ? (gameState.seat_assignments[i] === myUsername ? '#3498db' : '#7f8c8d') : '#27ae60'}}
               >
                 {['North', 'East', 'South', 'West'][i]}
                 {gameState.seat_assignments[i] ? ` (${gameState.seat_assignments[i]})` : ''}
@@ -317,9 +358,12 @@ function App() {
           </div>
           {gameState.seat_assignments.some(s => s !== null) && (
             <button onClick={startMatch} style={{marginTop: 30, width: '100%', padding: 15, background: '#f39c12'}}>
-              Start Game
+              {gameState.phase === 'lobby' ? 'Start Game' : 'Rejoin Game'}
             </button>
           )}
+          <button onClick={resetServer} style={{marginTop: 10, width: '100%', padding: 10, background: '#c0392b', fontSize: '0.8em'}}>
+            Reset Server (Clear All)
+          </button>
         </div>
         {message && <p style={{color: '#e74c3c'}}>{message}</p>}
       </div>
@@ -485,6 +529,11 @@ function App() {
                </div>
             </div>
           )}
+
+          <div style={{marginTop: 'auto', paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 10}}>
+            <button onClick={leaveSeat} style={{background: '#7f8c8d', width: '100%'}}>Leave Seat / Lobby</button>
+            <button onClick={resetServer} style={{background: '#c0392b', width: '100%', fontSize: '0.8em'}}>Reset Server (Clear All)</button>
+          </div>
         </div>
       </div>
     </div>

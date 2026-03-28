@@ -75,6 +75,14 @@ async def join_seat(req: JoinRequest):
     await broadcast_state()
     return game.get_state()
 
+@app.post("/lobby/vacate")
+async def vacate_seat(req: JoinRequest):
+    success = game.vacate_seat(req.seat_index)
+    if not success:
+         raise HTTPException(status_code=400, detail="Seat already empty or invalid")
+    await broadcast_state()
+    return game.get_state()
+
 @app.post("/game/start")
 async def start_game():
     game.start_game()

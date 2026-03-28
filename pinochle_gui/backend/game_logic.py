@@ -203,9 +203,26 @@ class Game:
 
     def join_seat(self, seat_index: int, name: str):
         if 0 <= seat_index < 4:
-            self.seat_assignments[seat_index] = name
-            self.add_log(f"{name} joined at seat {['North', 'East', 'South', 'West'][seat_index]}.")
-            return True
+            if self.seat_assignments[seat_index] is None:
+                self.seat_assignments[seat_index] = name
+                self.add_log(f"{name} joined at seat {['North', 'East', 'South', 'West'][seat_index]}.")
+                return True
+            elif self.seat_assignments[seat_index] == name:
+                # Rejoining own seat
+                return True
+        return False
+
+    def vacate_seat(self, seat_index: int):
+        if 0 <= seat_index < 4:
+            name = self.seat_assignments[seat_index]
+            if name:
+                self.seat_assignments[seat_index] = None
+                self.add_log(f"{name} left their seat. AI is taking over.")
+                # If it's the vacated player's turn to bid, trigger AI
+                if self.phase == "bidding" and self.current_bidder == seat_index:
+                    self.ai_bid_loop()
+                # If it's the vacated player's turn to play, the frontend timer will handle it via ai_play_one
+                return True
         return False
 
     def is_human(self, seat_index: int):
