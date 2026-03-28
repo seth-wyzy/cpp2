@@ -14,6 +14,9 @@ interface TrickEntry {
 }
 
 interface GameState {
+  game_mode: string;
+  active_players: number[];
+  player_totals: number[];
   game_num: number;
   rounds_played: number;
   us_games: number;
@@ -34,6 +37,7 @@ interface GameState {
   trick_leader: number;
   us_trick_points: number;
   them_trick_points: number;
+  player_trick_points: number[];
   melds: number[];
   meld_details: string[][];
   meld_cards: CardData[][][]; 
@@ -168,10 +172,13 @@ function App() {
   // Let's have the server handle it via a timer or just keep the frontend trigger for now.
   useEffect(() => {
     if (gameState?.phase === 'trick_taking') {
-      const curr_p = (gameState.trick_leader + gameState.current_trick.length) % 4;
+      const activePlayers = gameState.active_players || [0, 1, 2, 3];
+      const currentIndex = (activePlayers.indexOf(gameState.trick_leader) + gameState.current_trick.length) % activePlayers.length;
+      const curr_p = activePlayers[currentIndex];
+      
       // Trigger AI move if it's an AI's turn
-      if (gameState.seat_assignments[curr_p] === null && gameState.current_trick.length < 4) {
-        const firstHuman = gameState.seat_assignments.findIndex(s => s !== null);
+      if (gameState.player_names[curr_p]?.startsWith("AI") && gameState.current_trick.length < activePlayers.length) {
+        const firstHuman = gameState.seat_assignments.findIndex(s => s !== null && s !== "AI");
         if (mySeat === firstHuman) {
           const timer = setTimeout(async () => {
             const res = await fetch(`${API_BASE}/game/ai_play`, { method: 'POST' });
@@ -194,9 +201,10 @@ function App() {
 
   useEffect(() => {
     if (gameState?.phase === 'bidding' && gameState.current_bidder === mySeat) {
-      setCustomBid(gameState.bid === 20 ? 21 : gameState.bid + 1);
+      const minStartBid = gameState.game_mode === "5-card" ? 5 : 20;
+      setCustomBid(gameState.bid === minStartBid ? minStartBid + 1 : gameState.bid + 1);
     }
-  }, [gameState?.bid, gameState?.phase, gameState?.current_bidder, mySeat]);
+  }, [gameState?.bid, gameState?.phase, gameState?.current_bidder, mySeat, gameState?.game_mode]);
 
   const joinGame = async (seat: number) => {
     if (!myUsername) {
@@ -238,6 +246,29 @@ function App() {
         setMySeat(null);
         localStorage.removeItem('pinochle_seat');
       }
+    }
+  };
+
+  const setGameMode = async (mode: string) => {
+    const res = await fetch(`${API_BASE}/lobby/mode`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode })
+    });
+    if (res.ok) setGameState(await res.json());
+  };
+
+  const toggleAI = async (seat: number, action: 'add' | 'remove') => {
+    const res = await fetch(`${API_BASE}/lobby/ai/${action}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ seat_index: seat })
+    });
+    if (res.ok) {
+      setGameState(await res.json());
+    } else {
+      const err = await res.json();
+      setMessage(err.detail);
     }
   };
 
@@ -336,7 +367,21 @@ function App() {
     return (
       <div className="game-container">
         <h1>Pinochle Lobby</h1>
-        <div className="bidding-panel" style={{width: 400}}>
+        <div className="bidding-panel" style={{width: 500}}>
+          {gameState.phase === 'lobby' && (
+            <div style={{marginBottom: 20}}>
+              <h3>Game Mode</h3>
+              <select 
+                value={gameState.game_mode} 
+                onChange={(e) => setGameMode(e.target.value)}
+                style={{width: '100%', padding: 10, fontSize: '1.1em'}}
+              >
+                <option value="standard">Standard (4 Players, Teams, 12 Cards)</option>
+                <option value="5-card">5-Card (2-4 Players, Free-for-all, 5 Cards)</option>
+              </select>
+            </div>
+          )}
+
           <input 
             type="text" 
             placeholder="Your Name" 
@@ -346,19 +391,37 @@ function App() {
           />
           <h3>Select a Seat</h3>
           <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10}}>
-            {[0, 1, 2, 3].map(i => (
-              <button 
-                key={i} 
-                onClick={() => joinGame(i)} 
-                disabled={gameState.seat_assignments[i] !== null && gameState.seat_assignments[i] !== myUsername}
-                style={{padding: 20, background: gameState.seat_assignments[i] ? (gameState.seat_assignments[i] === myUsername ? '#3498db' : '#7f8c8d') : '#27ae60'}}
-              >
-                {['North', 'East', 'South', 'West'][i]}
-                {gameState.seat_assignments[i] ? ` (${gameState.seat_assignments[i]})` : ''}
-              </button>
-            ))}
+            {[0, 1, 2, 3].map(i => {
+              const occupant = gameState.seat_assignments[i];
+              const isMe = occupant === myUsername;
+              const isAI = occupant === "AI";
+              const isEmpty = occupant === null;
+              
+              return (
+                <div key={i} style={{display: 'flex', flexDirection: 'column', gap: 5}}>
+                  <button 
+                    onClick={() => joinGame(i)} 
+                    disabled={!isEmpty && !isMe}
+                    style={{
+                      padding: '15px 5px', 
+                      background: isMe ? '#3498db' : (isEmpty ? '#27ae60' : '#7f8c8d'),
+                      opacity: (!isEmpty && !isMe) ? 0.7 : 1
+                    }}
+                  >
+                    {['North', 'East', 'South', 'West'][i]}
+                    {occupant ? ` (${occupant})` : ''}
+                  </button>
+                  {gameState.phase === 'lobby' && (
+                    <>
+                      {isEmpty && <button onClick={() => toggleAI(i, 'add')} style={{background: '#8e44ad', padding: '5px', fontSize: '0.8em'}}>Add AI</button>}
+                      {isAI && <button onClick={() => toggleAI(i, 'remove')} style={{background: '#e67e22', padding: '5px', fontSize: '0.8em'}}>Remove AI</button>}
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
-          {gameState.seat_assignments.some(s => s !== null) && (
+          {gameState.active_players?.length >= 2 && (
             <button onClick={startMatch} style={{marginTop: 30, width: '100%', padding: 15, background: '#f39c12'}}>
               {gameState.phase === 'lobby' ? 'Start Game' : 'Rejoin Game'}
             </button>
@@ -380,16 +443,27 @@ function App() {
     return "";
   };
 
+  const activePlayers = gameState.active_players || [0, 1, 2, 3];
   const isMyTurnToPlay = gameState.phase === 'trick_taking' && 
-                         (gameState.trick_leader + gameState.current_trick.length) % 4 === mySeat;
+                         activePlayers[(activePlayers.indexOf(gameState.trick_leader) + gameState.current_trick.length) % activePlayers.length] === mySeat;
 
   return (
     <div className="game-container">
       <div className="scoreboard">
-        <div>Game: {gameState.game_num} ({gameState.us_games} - {gameState.them_games})</div>
-        <div>Round: {gameState.rounds_played} / 4</div>
-        <div>Us: {gameState.us_total} (+{(gameState.melds?.[0] || 0) + (gameState.melds?.[2] || 0)})</div>
-        <div>Them: {gameState.them_total} (+{(gameState.melds?.[1] || 0) + (gameState.melds?.[3] || 0)})</div>
+        <div>Game: {gameState.game_num} {gameState.game_mode === 'standard' && `(${gameState.us_games} - ${gameState.them_games})`}</div>
+        <div>Round: {gameState.rounds_played} {gameState.game_mode === 'standard' && "/ 4"}</div>
+        {gameState.game_mode === 'standard' ? (
+          <>
+            <div>Us: {gameState.us_total} (+{(gameState.melds?.[0] || 0) + (gameState.melds?.[2] || 0)})</div>
+            <div>Them: {gameState.them_total} (+{(gameState.melds?.[1] || 0) + (gameState.melds?.[3] || 0)})</div>
+          </>
+        ) : (
+          <div style={{display: 'flex', gap: '15px'}}>
+            {gameState.active_players?.map(p => (
+              <div key={p}>{gameState.player_names?.[p]}: {gameState.player_totals?.[p]} (+{gameState.melds?.[p] || 0})</div>
+            ))}
+          </div>
+        )}
         <div>Dealer: {gameState.player_names?.[gameState.dealer] || "Unknown"}</div>
         {gameState.trump !== -1 && (
           <div style={{fontWeight: 'bold', color: '#f1c40f', borderLeft: '2px solid #555', paddingLeft: 15}}>
@@ -405,16 +479,19 @@ function App() {
           <div className="table-area">
             <div className="phase-indicator">{gameState.phase.replace('_', ' ').toUpperCase()}</div>
             
-            {[0, 1, 2, 3].map(idx => (
-              <div key={idx} className={`player-position ${getRelativePos(idx)}`}>
-                {gameState.player_names?.[idx] || ""} {gameState.current_bidder === idx && gameState.phase === 'bidding' ? "💬" : ""}
-                {gameState.phase === 'meld_display' && gameState.meld_cards?.[idx] && (
-                  <div className={`meld-on-table ${["east", "west"].includes(getRelativePos(idx)) ? "vertical" : ""}`}>
-                    {gameState.meld_cards[idx].flat().map((c, i) => <Card key={i} card={c} dimmed />)}
-                  </div>
-                )}
-              </div>
-            ))}
+            {[0, 1, 2, 3].map(idx => {
+              if (!gameState.active_players?.includes(idx) && idx !== mySeat) return null;
+              return (
+                <div key={idx} className={`player-position ${getRelativePos(idx)}`}>
+                  {gameState.player_names?.[idx] || ""} {gameState.current_bidder === idx && gameState.phase === 'bidding' ? "💬" : ""}
+                  {gameState.phase === 'meld_display' && gameState.meld_cards?.[idx] && (
+                    <div className={`meld-on-table ${["east", "west"].includes(getRelativePos(idx)) ? "vertical" : ""}`}>
+                      {gameState.meld_cards[idx].flat().map((c, i) => <Card key={i} card={c} dimmed />)}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             
             <div className="trick-area">
               {gameState.current_trick.map((entry, i) => (
@@ -473,7 +550,7 @@ function App() {
             </div>
           )}
 
-          {gameState.current_trick.length === 4 && (
+          {gameState.current_trick.length === activePlayers.length && (
             <div className="bidding-panel" style={{background: '#27ae60'}}>
               <h3>Trick Complete</h3>
               <button onClick={evaluateTrick} style={{width: '100%', padding: '15px', fontSize: '1.1em'}}>Collect Trick</button>
@@ -483,17 +560,17 @@ function App() {
           {gameState.phase === 'bidding' && gameState.current_bidder === mySeat && (
             <div className="bidding-panel">
               <h3>Your Bid</h3>
-              <p>Current High: {gameState.bid === 20 ? "None" : gameState.bid}</p>
+              <p>Current High: {gameState.bid === (gameState.game_mode === "5-card" ? 4 : 20) ? "None" : gameState.bid}</p>
               <div className="bid-buttons">
                 <button onClick={() => placeBid(0)} style={{background: '#e74c3c'}}>Pass</button>
-                <button onClick={() => placeBid(gameState.bid === 20 ? 21 : gameState.bid + 1)}>
-                  Bid {gameState.bid === 20 ? 21 : gameState.bid + 1}
+                <button onClick={() => placeBid(gameState.bid === (gameState.game_mode === "5-card" ? 4 : 20) ? (gameState.game_mode === "5-card" ? 5 : 21) : gameState.bid + 1)}>
+                  Bid {gameState.bid === (gameState.game_mode === "5-card" ? 4 : 20) ? (gameState.game_mode === "5-card" ? 5 : 21) : gameState.bid + 1}
                 </button>
               </div>
               <div className="custom-bid">
                 <input 
                   type="number" 
-                  min={gameState.bid === 20 ? 21 : gameState.bid + 1} 
+                  min={gameState.bid === (gameState.game_mode === "5-card" ? 4 : 20) ? (gameState.game_mode === "5-card" ? 5 : 21) : gameState.bid + 1} 
                   value={customBid} 
                   onChange={(e) => setCustomBid(parseInt(e.target.value))}
                 />
@@ -525,8 +602,20 @@ function App() {
             <div className="modal-overlay" style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 300}}>
                <div className="modal-content">
                   <h1>MATCH OVER!</h1>
-                  <h2>{gameState.us_games > gameState.them_games ? "YOU WON THE MATCH!" : "THEM WON THE MATCH!"}</h2>
-                  <p>Final Match Score: {gameState.us_games} - {gameState.them_games}</p>
+                  {gameState.game_mode === 'standard' ? (
+                    <>
+                      <h2>{gameState.us_games > gameState.them_games ? "YOU WON THE MATCH!" : "THEM WON THE MATCH!"}</h2>
+                      <p>Final Match Score: {gameState.us_games} - {gameState.them_games}</p>
+                    </>
+                  ) : (
+                    <>
+                      <h2>Game Over!</h2>
+                      <p>Final Scores:</p>
+                      {gameState.active_players.map(p => (
+                        <p key={p}>{gameState.player_names[p]}: {gameState.player_totals[p]}</p>
+                      ))}
+                    </>
+                  )}
                   <button onClick={startNewGame} style={{padding: '20px 40px', fontSize: '1.5em'}}>Play Again</button>
                </div>
             </div>

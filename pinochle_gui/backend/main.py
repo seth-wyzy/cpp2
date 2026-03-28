@@ -56,6 +56,12 @@ class MeldConfirmRequest(BaseModel):
     seat_index: int
     selected_indices: List[int]
 
+class ModeRequest(BaseModel):
+    mode: str
+
+class AIRequest(BaseModel):
+    seat_index: int
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
@@ -66,6 +72,28 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.receive_text() # Keep alive
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+
+@app.post("/lobby/mode")
+async def set_game_mode(req: ModeRequest):
+    game.set_game_mode(req.mode)
+    await broadcast_state()
+    return game.get_state()
+
+@app.post("/lobby/ai/add")
+async def add_ai(req: AIRequest):
+    success = game.add_ai(req.seat_index)
+    if not success:
+        raise HTTPException(status_code=400, detail="Cannot add AI to this seat")
+    await broadcast_state()
+    return game.get_state()
+
+@app.post("/lobby/ai/remove")
+async def remove_ai(req: AIRequest):
+    success = game.remove_ai(req.seat_index)
+    if not success:
+        raise HTTPException(status_code=400, detail="Cannot remove AI from this seat")
+    await broadcast_state()
+    return game.get_state()
 
 @app.post("/lobby/join")
 async def join_seat(req: JoinRequest):
@@ -145,7 +173,10 @@ async def ai_play():
 
 @app.post("/game/play")
 async def play_card(req: PlayRequest):
-    curr_p = (game.trick_leader + len(game.current_trick)) % 4
+    active_players = game.get_active_players()
+    current_idx = (active_players.index(game.trick_leader) + len(game.current_trick)) % len(active_players)
+    curr_p = active_players[current_idx]
+    
     if game.phase != "trick_taking" or curr_p != req.seat_index:
         raise HTTPException(status_code=400, detail="Not your turn to play or wrong phase")
     
@@ -162,7 +193,8 @@ async def play_card(req: PlayRequest):
 
 @app.post("/game/evaluate")
 async def evaluate():
-    if game.phase != "trick_taking" or len(game.current_trick) != 4:
+    active_players = game.get_active_players()
+    if game.phase != "trick_taking" or len(game.current_trick) != len(active_players):
          raise HTTPException(status_code=400, detail="Trick not finished")
     game.evaluate_trick()
     await broadcast_state()
