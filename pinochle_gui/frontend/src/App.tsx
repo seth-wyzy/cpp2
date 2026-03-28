@@ -93,13 +93,17 @@ function App() {
   };
 
   useEffect(() => {
+    // 1. Initial fetch via HTTP so the UI loads immediately
+    fetchState();
+
+    // 2. Set up WebSocket for real-time updates
     console.log("Attempting WebSocket connection to:", WS_URL);
     const socket = new WebSocket(WS_URL);
     
     socket.onopen = () => {
       console.log("WebSocket connected successfully to:", WS_URL);
-      setMessage(null); // Clear connection error
-      fetchState(); // Initial sync
+      setMessage(null);
+      fetchState(); // Re-sync on open
     };
 
     socket.onmessage = (event) => {
@@ -128,7 +132,19 @@ function App() {
     };
 
     ws.current = socket;
-    return () => socket.close();
+
+    // Safety fallback: Poll every 5 seconds in case WebSocket drops
+    const pollInterval = setInterval(() => {
+      if (socket.readyState !== WebSocket.OPEN) {
+        console.log("WebSocket not open, polling state...");
+        fetchState();
+      }
+    }, 5000);
+
+    return () => {
+      socket.close();
+      clearInterval(pollInterval);
+    };
   }, []);
 
   // AI play loop trigger (only if I'm the leader or it's AI turn)
