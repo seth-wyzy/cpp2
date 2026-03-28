@@ -199,15 +199,18 @@ function App() {
   };
 
   const startMatch = async () => {
-    await fetch(`${API_BASE}/game/start`, { method: 'POST' });
+    const res = await fetch(`${API_BASE}/game/start`, { method: 'POST' });
+    if (res.ok) setGameState(await res.json());
   };
 
   const startNewGame = async () => {
-    await fetch(`${API_BASE}/game/new`, { method: 'POST' });
+    const res = await fetch(`${API_BASE}/game/new`, { method: 'POST' });
+    if (res.ok) setGameState(await res.json());
   };
 
   const nextRound = async () => {
-    await fetch(`${API_BASE}/game/next_round`, { method: 'POST' });
+    const res = await fetch(`${API_BASE}/game/next_round`, { method: 'POST' });
+    if (res.ok) setGameState(await res.json());
   };
 
   const placeBid = async (amount: number) => {
@@ -217,7 +220,9 @@ function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ seat_index: mySeat, amount })
     });
-    if (!res.ok) {
+    if (res.ok) {
+      setGameState(await res.json());
+    } else {
       const err = await res.json();
       setMessage(err.detail);
       setTimeout(() => setMessage(null), 3000);
@@ -225,12 +230,15 @@ function App() {
   };
 
   const selectTrump = async (suit: number) => {
-    await fetch(`${API_BASE}/game/trump`, {
+    const res = await fetch(`${API_BASE}/game/trump`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ suit })
     });
-    setSelectedMeldIndices([]);
+    if (res.ok) {
+      setGameState(await res.json());
+      setSelectedMeldIndices([]);
+    }
   };
 
   const toggleMeldCard = (index: number) => {
@@ -248,12 +256,14 @@ function App() {
       body: JSON.stringify({ seat_index: mySeat, selected_indices: selectedMeldIndices })
     });
     if (res.ok) {
+      setGameState(await res.json());
       setSelectedMeldIndices([]);
     }
   };
 
   const startTricks = async () => {
-    await fetch(`${API_BASE}/game/start_tricks`, { method: 'POST' });
+    const res = await fetch(`${API_BASE}/game/start_tricks`, { method: 'POST' });
+    if (res.ok) setGameState(await res.json());
   };
 
   const playCard = async (index: number) => {
@@ -263,7 +273,9 @@ function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ seat_index: mySeat, card_index: index })
     });
-    if (!res.ok) {
+    if (res.ok) {
+      setGameState(await res.json());
+    } else {
       const err = await res.json();
       setMessage(err.detail);
       setTimeout(() => setMessage(null), 3000);
@@ -271,7 +283,8 @@ function App() {
   };
 
   const evaluateTrick = async () => {
-    await fetch(`${API_BASE}/game/evaluate`, { method: 'POST' });
+    const res = await fetch(`${API_BASE}/game/evaluate`, { method: 'POST' });
+    if (res.ok) setGameState(await res.json());
   };
 
   if (!gameState) return <div className="game-container">Connecting...</div>;
