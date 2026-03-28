@@ -153,13 +153,12 @@ function App() {
 
     ws.current = socket;
 
-    // Safety fallback: Poll every 5 seconds in case WebSocket drops
+    // Safety fallback: Poll every 1 second in case WebSocket drops
     const pollInterval = setInterval(() => {
       if (socket.readyState !== WebSocket.OPEN) {
-        console.log("WebSocket not open, polling state...");
         fetchState();
       }
-    }, 5000);
+    }, 1000);
 
     return () => {
       socket.close();

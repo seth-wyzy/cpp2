@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict
 import json
 import os
+import asyncio
 from game_logic import Game
 
 app = FastAPI()
@@ -25,11 +26,17 @@ class ConnectionManager:
         self.active_connections.append(websocket)
 
     def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
 
     async def broadcast(self, message: str):
-        for connection in self.active_connections:
-            await connection.send_text(message)
+        if not self.active_connections:
+            return
+        # Send to everyone in parallel to improve responsiveness
+        await asyncio.gather(
+            *[conn.send_text(message) for conn in self.active_connections],
+            return_exceptions=True
+        )
 
 manager = ConnectionManager()
 game = Game()
@@ -69,8 +76,16 @@ async def websocket_endpoint(websocket: WebSocket):
         # Send initial state
         await websocket.send_text(json.dumps(game.get_state()))
         while True:
-            await websocket.receive_text() # Keep alive
-    except WebSocketDisconnect:
+            # Keep alive with a ping to prevent Render from closing the connection
+            try:
+                # Wait for data or timeout to send a ping
+                await asyncio.wait_for(websocket.receive_text(), timeout=20.0)
+            except asyncio.TimeoutError:
+                # Send a small ping message
+                await websocket.send_json({"type": "ping"})
+    except Exception:
+        manager.disconnect(websocket)
+    finally:
         manager.disconnect(websocket)
 
 @app.post("/lobby/mode")
