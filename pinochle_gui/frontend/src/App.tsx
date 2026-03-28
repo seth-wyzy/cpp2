@@ -171,12 +171,14 @@ function App() {
       const curr_p = (gameState.trick_leader + gameState.current_trick.length) % 4;
       // Trigger AI move if it's an AI's turn
       if (gameState.seat_assignments[curr_p] === null && gameState.current_trick.length < 4) {
-        // To prevent multiple clients triggering, only the first connected human or a specific seat triggers.
-        // Simple heuristic: if I'm the lowest index human player, I trigger.
         const firstHuman = gameState.seat_assignments.findIndex(s => s !== null);
         if (mySeat === firstHuman) {
           const timer = setTimeout(async () => {
-            await fetch(`${API_BASE}/game/ai_play`, { method: 'POST' });
+            const res = await fetch(`${API_BASE}/game/ai_play`, { method: 'POST' });
+            if (res.ok) {
+              const data = await res.json();
+              setGameState(data.state);
+            }
           }, 1000);
           return () => clearTimeout(timer);
         }
