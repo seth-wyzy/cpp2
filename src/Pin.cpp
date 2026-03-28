@@ -31,40 +31,80 @@ Pin::Pin() {
     playerArray[1] = new AIPlayer(1);
     playerArray[3] = new AIPlayer(3);
 
-    // initilize_game(); // also prints your hand 
-    // bet = bidding();
-
-    // choose_cards(*allHands[2], *meldHands[2]);
-    // trumpSuit = 0;
-    // hand.clear();
-    // card JD  = {11, 1, 0};
-    // card JD2 = {12, 1, 1};
-    // card QS = {12, 3, 0};
-    // card QS2 = {13, 3, 0};
-    // hand.push_back(JD);
-    // hand.push_back(JD2);
-    // hand.push_back(QS);
-    // hand.push_back(QS2);
-    // std::cout << std::endl;
-    // print_hand(hand);
-    // sortHands();
-    // count_meld(hand);
-    // doTrickTaking();
-    for (int i = dealer; i < dealer+4; i++) { 
-        int h = i % 4;
+    for (int i = 0; i < 4; i++) { // Let's play 4 rounds for testing or one full game
+        std::cout << "\n--- Round " << i+1 << " ---\n";
         std::cout << "Dealer: ";
-        print_person(h);
+        print_person(dealer);
         shuffleDeck();
         clear_hands();
         deal_hands();
         sortHands();
-        std::cout << "Your Hand: \n";
-        print_hand(hand);
-        int winningBid = bidding(); // i don't think that the winner of the bid gets to start the trick taking
-        print_hand(hand);
-        choose_cards(hand, meld_hand);
-        count_meld(meld_hand);
+        
+        usCards.clear();
+        themCards.clear();
+        usPoints = 0;
+        themPoints = 0;
+
+        // Initialize AI players with their hands
+        for (int p = 0; p < 4; p++) {
+            if (p != 2) {
+                playerArray[p]->startRound(*allHands[p]);
+                suitAi(*playerArray[p]);
+            }
+        }
+
+        int winningBid = bidding();
+        
+        // Count meld for everyone
+        std::cout << "--- Meld ---" << std::endl;
+        int roundUsMeld = 0;
+        int roundThemMeld = 0;
+        for (int p = 0; p < 4; p++) {
+            int m;
+            std::cout << "\n--- ";
+            print_person(p);
+            std::cout << " Meld ---" << std::endl;
+            if (p == 2) {
+                m = count_meld(hand, trumpSuit, true); 
+            } else {
+                m = aiMeld(*playerArray[p], true); 
+            }
+            
+            if (p == 0 || p == 2) roundUsMeld += m;
+            else roundThemMeld += m;
+        }
+        std::cout << "\nUs Meld Total: " << roundUsMeld << " Them Meld Total: " << roundThemMeld << std::endl;
+
         doTrickTaking();
+        tPoints();
+        
+        int usRoundTotal = roundUsMeld + usPoints;
+        int themRoundTotal = roundThemMeld + themPoints;
+
+        if (betWinner == 0 || betWinner == 2) { // Us bid
+            if (usRoundTotal >= bet) {
+                usTotal += usRoundTotal;
+                std::cout << "Us MADE bid! +" << usRoundTotal << " pts" << std::endl;
+            } else {
+                usTotal -= bet;
+                std::cout << "Us SET! -" << bet << " pts" << std::endl;
+            }
+            themTotal += themRoundTotal;
+        } else { // Them bid
+            if (themRoundTotal >= bet) {
+                themTotal += themRoundTotal;
+                std::cout << "Them MADE bid! +" << themRoundTotal << " pts" << std::endl;
+            } else {
+                themTotal -= bet;
+                std::cout << "Them SET! -" << bet << " pts" << std::endl;
+            }
+            usTotal += usRoundTotal;
+        }
+        
+        std::cout << "Us Trick Points: " << usPoints << " Them Trick Points: " << themPoints << std::endl;
+        std::cout << "Current Score - Us: " << usTotal << " Them: " << themTotal << std::endl;
+        
+        dealer = (dealer + 1) % 4;
     }
 }
 
@@ -135,80 +175,75 @@ void Pin::meld() {
      
 }
 int Pin::bidding() {
-    bool y = true;
-    bool n = true;
-    bool e = true;
-    bool w = true;
-    int n_bid = 0;  
-    int e_bid = 0;    
-    int y_bid = 0;
-    int w_bid = 0;
-    int winning_bid;
-    int temp_bid;
-    int start = dealer;
-    int currHigh = 0;
-    
+    std::map<int, bool> active;
+    for (int i = 0; i < 4; i++) active[i] = true;
+    int currHigh = 20; 
+    int bidderWinner = -1;
+    int turn = (dealer + 1) % 4;
+    int activeCount = 4;
 
-    while (y || n || e || w) {
-        switch (start) {
-            case 0:
-                if (n) {
-                    std::cout << "North Bid: ";
-                    std::cin >> n_bid;
-                    std::cout << std::endl;
-                    if (n_bid <= 0 || n_bid <= currHigh || n_bid < 21) {
-                        n = false;
-                    } else {
-                        currHigh = n_bid;
-                    }
-                    
+    while (activeCount > 1) {
+        if (active[turn]) {
+            int bid = 0;
+            if (turn == 2) { // Human
+                std::cout << "Your Hand: \n";
+                print_hand(hand);
+                std::cout << "Current high bid: " << (currHigh == 20 ? "None" : std::to_string(currHigh)) << std::endl;
+                std::cout << "Enter your bid (0 to pass): ";
+                std::cin >> bid;
+                if (bid <= currHigh) bid = 0;
+            } else { // AI
+                bid = playerArray[turn]->chooseBid(currHigh);
+                if (bid != -1) {
+                    std::cout << "Player ";
+                    print_person(turn);
+                    std::cout << " bids " << bid << std::endl;
+                } else {
+                    std::cout << "Player ";
+                    print_person(turn);
+                    std::cout << " passes." << std::endl;
+                    bid = 0;
                 }
-            case 1:
-                if (e) {
-                    std::cout << "East Bid: ";
-                    std::cin >> e_bid;
-                    std::cout << std::endl;
-                    if (e_bid <= 0 || e_bid <= currHigh || e_bid < 21) {
-                        e = false;
-                    } else {
-                        currHigh = e_bid;
-                    }
-                }
+            }
 
-            case 2:
-                if (y) {
-                    std::cout << "Your Bid: ";
-                    std::cin >> y_bid;
-                    std::cout << std::endl;
-                    if (y_bid == 0 || y_bid <= currHigh || y_bid < 21) {
-                        y = false;
-                    }  else {
-                        currHigh = y_bid;
-                    }
-                }
-            case 3:
-                if (w) {
-                    std::cout << "West Bid: ";
-                    std::cin >> w_bid;
-                    std::cout << std::endl;
-                    if (w_bid == 0 || w_bid <= currHigh || w_bid < 21) {
-                        w = false;
-                    } else {
-                        currHigh = w_bid;
-                    }  
-                }
-                start = 0;
+            if (bid == 0) {
+                active[turn] = false;
+                activeCount--;
+            } else {
+                currHigh = bid;
+                bidderWinner = turn;
+            }
         }
-        
-
+        turn = (turn + 1) % 4;
     }
-    std::cout << "Clubs, Diamonds, Hearts, Spades (0,1,2,3)" << std::endl;
-    std::cout << "Please input your trump suit: ";
-    std::cin >> trumpSuit;
-    std::cout << std::endl;
-    return currHigh;
-    
 
+    if (bidderWinner == -1) {
+        bidderWinner = dealer;
+        currHigh = 21;
+        std::cout << "Everyone passed. Dealer (";
+        print_person(dealer);
+        std::cout << ") is stuck with 21." << std::endl;
+    }
+
+    std::cout << "Winner of bidding: ";
+    print_person(bidderWinner);
+    std::cout << " with bid " << currHigh << std::endl;
+    bet = currHigh;
+    betWinner = bidderWinner;
+
+    if (bidderWinner == 2) {
+        std::cout << "Clubs: 0, Diamonds: 1, Hearts: 2, Spades: 3" << std::endl;
+        std::cout << "Please input your trump suit: ";
+        std::cin >> trumpSuit;
+    } else {
+        trumpSuit = playerArray[bidderWinner]->chooseTrump();
+        std::cout << "Trump suit chosen: " << trumpSuit << " (";
+        card temp(9, trumpSuit, 0);
+        std::cout << temp.p_suit() << ")" << std::endl;
+    }
+
+    tWinner = bidderWinner; // Bid winner starts the first trick
+    return currHigh;
 }
 
 void Pin::choose_cards(std::vector<card>& hand, std::vector<card>& meld_hand){
@@ -231,7 +266,7 @@ void Pin::choose_all_cards(){
     }
 }
 
-int Pin::count_meld(std::vector<card> hand){ // should only pass meld hand in for actual playing becuase we want that element
+int Pin::count_meld(std::vector<card> hand, bool verbose){ // should only pass meld hand in for actual playing becuase we want that element
 /*
     Pinochle 4
     Double 30
@@ -268,16 +303,18 @@ int Pin::count_meld(std::vector<card> hand){ // should only pass meld hand in fo
         }
     }
     if (hasRun) {
-        std::cout << "Run in Trump: +15" << std::endl;
+        if (verbose) std::cout << "Run in Trump: +15" << std::endl;
         meldPoints += 15;
     }
     // Marriage
     for (int s = 0; s <= 3; ++s) {
         if (suitRank[s][13] > 0 && suitRank[s][12] > 0) {
             int pts = (s == trumpSuit) ? 4 : 2;
-            card che = {0, s,0};
-            std::cout << "Marriage in " << che.p_suit() << ": +" << pts << std::endl;
             if (suitRank[s][13] > 1 && suitRank[s][12] > 1) pts *= 2;
+            if (verbose) {
+                card che = {0, s,0};
+                std::cout << "Marriage in " << che.p_suit() << ": +" << pts << std::endl;
+            }
             meldPoints += pts;
         }
     }
@@ -295,9 +332,11 @@ int Pin::count_meld(std::vector<card> hand){ // should only pass meld hand in fo
                 break;
             }
         }
-        card check = {r,0,0};
         if (hasAll) {
-            std::cout << check.p_rank() <<"s around: +" << points << "\n";
+            if (verbose) {
+                card check = {r,0,0};
+                std::cout << check.p_rank() <<"s around: +" << points << "\n";
+            }
             meldPoints += points;
         }
     }
@@ -308,23 +347,21 @@ int Pin::count_meld(std::vector<card> hand){ // should only pass meld hand in fo
         int pinochles = std::min(q_spades, j_diamonds);
         if (pinochles >= 1) {
             int pts = (pinochles == 2) ? 30 : 4 * pinochles;
-            std::cout << (pinochles == 2 ? "Double " : "") << "Pinochle: +" << pts << "\n";
+            if (verbose) std::cout << (pinochles == 2 ? "Double " : "") << "Pinochle: +" << pts << "\n";
             meldPoints += pts;
         }
     
         // 9 of trump
         if (suitRank[trumpSuit][9] > 0) {
             int p = suitRank[trumpSuit][9];
-            std::cout << "9 of trump x" << p << std::endl;
+            if (verbose) std::cout << "9 of trump x" << p << std::endl;
             meldPoints += p;
         }
     
-        std::cout << "Total Meld Points: " << meldPoints << std::endl;
+        if (verbose) std::cout << "Total Meld Points: " << meldPoints << std::endl;
     
 
         return meldPoints;
-    
-    
 }
 void Pin::all_count_meld(){
     for (int i = 0; i < 4; i++){
@@ -332,83 +369,112 @@ void Pin::all_count_meld(){
     }
 }
 
-std::map<int, card> Pin::trick() { // this currently assumes no re nigs, but logic can be implemented 
-    std::map<int, card> trick_hand;
-    for(int i = tWinner; i < tWinner+4; i++) {
-        int h = i% 4;
-        print_person(h); // print whos turn it is
-        print_hand(*allHands[h]);
-        std::cout << "Please Select a Card (9-15) and suit (0-3 (CDHS))";
-        int chosen_suit;
-        int chosen_card;
-        bool done = true;
-        do {
-            if (std::cin >> chosen_card && std::cin >> chosen_suit
-            && chosen_card < 16 && chosen_card > 9  && chosen_card != 10 
-            && chosen_suit >= 0 && chosen_suit < 4) done = false;
-            else {
-                std::cout << "ERROR: Invalid Format" << std::endl;
-                std::cout << "Please Select a Card (9-14) and suit (0-3 (CDHS))";
-         } }while (done);
-        card temp(chosen_card, chosen_suit,0);
-        auto& handVec = *allHands[h];   // reference to player's hand
-
-        auto it = std::find(handVec.begin(), handVec.end(), temp);
-
-        if (it == handVec.end()) {
-            std::cout << "ERROR: that card isn't in your hand, try again" << std::endl;
-            --i;               
-            continue;
-        }
-
-        // 2. Add it to the trick
-        trick_hand[h] = temp;
-
-        // 3. Erase it from the hand
-        handVec.erase(it);
-    }
-
-    return trick_hand;
+std::map<int, card> Pin::trick() {
+    std::map<int, card> current_trick;
+    std::vector<card> trick_vec;
     
+    for (int i = 0; i < 4; i++) {
+        int h = (tWinner + i) % 4;
+        card chosen_card;
+        
+        if (h == 2) { // Human
+            std::cout << "--- Your turn ---" << std::endl;
+            if (i > 0) {
+                std::cout << "Current trick:" << std::endl;
+                for (const auto& c : trick_vec) c.print_card();
+            }
+            std::cout << ":\n ";
+            print_hand(hand);
+            std::cout << "Enter rank and suit (e.g. 15 3 for Ace of Spades): ";
+            
+            bool valid = false;
+            while (!valid) {
+                int r, s;
+                if (!(std::cin >> r >> s)) {
+                    std::cin.clear();
+                    std::cin.ignore(10000, '\n');
+                    continue;
+                }
+                chosen_card = card(r, s, 0);
+                auto it = std::find(allHands[h]->begin(), allHands[h]->end(), chosen_card);
+                if (it != allHands[h]->end()) {
+                    // TODO: Add actual pinochle rule validation here for human
+                    valid = true;
+                    allHands[h]->erase(it);
+                } else {
+                    std::cout << "Card not in hand. Try again: ";
+                }
+            }
+        } else { // AI
+            chosen_card = playerArray[h]->chooseMove(trick_vec, (i == 0), trumpSuit);
+            auto it = std::find(allHands[h]->begin(), allHands[h]->end(), chosen_card);
+            if (it != allHands[h]->end()) {
+                allHands[h]->erase(it);
+            }
+            std::cout << "Player ";
+            print_person(h);
+            std::cout << " plays ";
+            chosen_card.print_card();
+        }
+        current_trick[h] = chosen_card;
+        trick_vec.push_back(chosen_card);
+    }
+    return current_trick;
 }
 
 
 int Pin::hand_winner() {
-    trick_cards = trick();
-    if (!checkTricks(trick_cards, tWinner)) return -1;
-    std::pair<int, card> currWinner = {tWinner, trick_cards[tWinner]};
-    for (int i = tWinner+1; i < tWinner+3; i++) {
-        int h = i % 4;
-        if ((trick_cards[h].suit == currWinner.second.suit && trick_cards[h].rank > currWinner.second.rank)
-            || trick_cards[h].suit == trumpSuit && currWinner.second.suit != trumpSuit) {
-            currWinner = {h, trick_cards[h]};
+    if (trick_cards.empty()) return -1;
+    
+    int winner = tWinner;
+    card winningCard = trick_cards[tWinner];
+    
+    for (int i = 1; i < 4; i++) {
+        int h = (tWinner + i) % 4;
+        card c = trick_cards[h];
+        if (c.suit == winningCard.suit) {
+            if (c.rank > winningCard.rank) {
+                winner = h;
+                winningCard = c;
+            }
+        } else if (c.suit == trumpSuit) {
+            winner = h;
+            winningCard = c;
         }
     }
-    return currWinner.first;
+    return winner;
 }
 
 void Pin::takeTrick(){
-    switch (hand_winner()) {
+    int winner = hand_winner();
+    switch (winner) {
         case 0: case 2:
             for (const auto& it: trick_cards){
                 usCards.push_back(it.second);
-                lastTrick = true;
             }
+            lastTrick = true;
             break;
         case 1: case 3:
             for (const auto& it: trick_cards) {
                 themCards.push_back(it.second);
-                lastTrick = false;
             }
+            lastTrick = false;
             break;
     }
+    tWinner = winner; // Winner of this trick starts the next one
     trick_cards.clear();
 }
 
 void Pin::doTrickTaking() {
-    for (const auto& it: *allHands[0]) {
-        trick();
+    usCards.clear();
+    themCards.clear();
+    for (int i = 0; i < 12; i++) {
+        std::cout << "\n--- Trick " << i+1 << " ---\n";
+        trick_cards = trick();
         takeTrick();
+        std::cout << "Trick winner: ";
+        print_person(tWinner);
+        std::cout << std::endl;
     }
 }
 
@@ -528,37 +594,40 @@ bool Pin::checkTricks(std::map<int, card> currTrick, int startPlayer) {
     return true;
 }
 
-int Pin::aiMeld(AIPlayer& ai) {
-    int meld =  count_meld(ai.getMyHand());
+int Pin::aiMeld(AIPlayer& ai, bool verbose) {
+    int meld =  count_meld(ai.getMyHand(), trumpSuit, verbose);
     ai.setMeld(meld);
     return meld;
 }
 
 int Pin::allAiMeld() {
+    int total = 0;
     for (int i = 0; i < 4; i++) {
-        if (i == 3) continue;
-        aiMeld(*playerArray[i]);
+        if (i == 2) continue;
+        total += aiMeld(*playerArray[i]);
     }
+    return total;
 }
 
 void Pin::suitAi(AIPlayer& ai) {
     std::vector<card> hand = ai.getMyHand();
-    ai.sethMeld(count_meld(hand, 0)); 
-    ai.setdMeld(count_meld(hand, 1)); 
-    ai.setcMeld(count_meld(hand, 2));
-    ai.setsMeld(count_meld(hand, 3)); 
-    ai.choosePersonalTrump(); // picks the largest one for bidding purposes
+    ai.setcMeld(count_meld(hand, 0, false)); // 0: Clubs
+    ai.setdMeld(count_meld(hand, 1, false)); // 1: Diamonds
+    ai.sethMeld(count_meld(hand, 2, false)); // 2: Hearts
+    ai.setsMeld(count_meld(hand, 3, false)); // 3: Spades
+    ai.choosePersonalTrump(); // picks the largest one for bidding purposes 
 }
 
 void Pin::allSuitAi() {
     for (int i = 0; i < 4; i++) {
-        if (i == 3) continue;
+        if (i == 2) continue;
         suitAi(*playerArray[i]);
     }
 }
 
 
-int Pin::count_meld(std::vector<card> hand, int trump){ // should only pass meld hand in for actual playing becuase we want that element
+
+int Pin::count_meld(std::vector<card> hand, int trump, bool verbose){ // should only pass meld hand in for actual playing becuase we want that element
 /*
     Pinochle 4
     Double 30
@@ -584,7 +653,7 @@ int Pin::count_meld(std::vector<card> hand, int trump){ // should only pass meld
     }
     int meldPoints = 0;
 
-    
+
     // Run in trump: A 10 K Q J (15 14 13 12 11)
     std::vector<int> run = {15, 14, 13, 12, 11};
     bool hasRun = true;
@@ -595,16 +664,18 @@ int Pin::count_meld(std::vector<card> hand, int trump){ // should only pass meld
         }
     }
     if (hasRun) {
-        std::cout << "Run in Trump: +15" << std::endl;
+        if (verbose) std::cout << "Run in Trump: +15" << std::endl;
         meldPoints += 15;
     }
     // Marriage
     for (int s = 0; s <= 3; ++s) {
         if (suitRank[s][13] > 0 && suitRank[s][12] > 0) {
             int pts = (s == trump) ? 4 : 2;
-            card che = {0, s,0};
-            std::cout << "Marriage in " << che.p_suit() << ": +" << pts << std::endl;
             if (suitRank[s][13] > 1 && suitRank[s][12] > 1) pts *= 2;
+            if (verbose) {
+                card che = {0, s,0};
+                std::cout << "Marriage in " << che.p_suit() << ": +" << pts << std::endl;
+            }
             meldPoints += pts;
         }
     }
@@ -622,9 +693,11 @@ int Pin::count_meld(std::vector<card> hand, int trump){ // should only pass meld
                 break;
             }
         }
-        card check = {r,0,0};
         if (hasAll) {
-            std::cout << check.p_rank() <<"s around: +" << points << "\n";
+            if (verbose) {
+                card check = {r,0,0};
+                std::cout << check.p_rank() <<"s around: +" << points << "\n";
+            }
             meldPoints += points;
         }
     }
@@ -635,21 +708,19 @@ int Pin::count_meld(std::vector<card> hand, int trump){ // should only pass meld
         int pinochles = std::min(q_spades, j_diamonds);
         if (pinochles >= 1) {
             int pts = (pinochles == 2) ? 30 : 4 * pinochles;
-            std::cout << (pinochles == 2 ? "Double " : "") << "Pinochle: +" << pts << "\n";
+            if (verbose) std::cout << (pinochles == 2 ? "Double " : "") << "Pinochle: +" << pts << "\n";
             meldPoints += pts;
         }
-    
+
         // 9 of trump
         if (suitRank[trump][9] > 0) {
             int p = suitRank[trump][9];
-            std::cout << "9 of trump x" << p << std::endl;
+            if (verbose) std::cout << "9 of trump x" << p << std::endl;
             meldPoints += p;
         }
-    
-        std::cout << "Total Meld Points: " << meldPoints << std::endl;
-    
+
+        if (verbose) std::cout << "Total Meld Points: " << meldPoints << std::endl;
+
 
         return meldPoints;
-    
-    
 }

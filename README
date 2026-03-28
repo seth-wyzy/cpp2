@@ -2,3 +2,9 @@ Activate The virtual environment for the testing server:
 source /home/seth/cpp2/networkTest/myenv/bin/activate
 
 deactivate to deactivate
+
+
+conda run -n pinochle python pinochle_gui/backend/main.py
+
+cd pinochle_gui/frontend
+npm start

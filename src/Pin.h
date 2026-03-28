@@ -30,8 +30,8 @@ public:
     void meld();
     int bidding();
     void choose_cards(std::vector<card>& hand, std::vector<card>& meld_hand);
-    int count_meld(std::vector<card> hand);
-    int count_meld(std::vector<card> hand, int trump);
+    int count_meld(std::vector<card> hand, bool verbose = false);
+    int count_meld(std::vector<card> hand, int trump, bool verbose = false);
     void all_count_meld();
     void choose_all_cards();
     std::map<int, card> trick();
@@ -44,7 +44,7 @@ public:
     void doTrickTaking();
     void tPoints();
     bool checkTricks(std::map<int, card> currTrick, int startPlayer);
-    int aiMeld(AIPlayer& ai);
+    int aiMeld(AIPlayer& ai, bool verbose = false);
     int allAiMeld();
     void suitAi(AIPlayer& ai);
     void allSuitAi();
@@ -82,7 +82,10 @@ private:
     int round = 0;
     int usPoints = 0;
     int themPoints = 0;
+    int usTotal = 0;
+    int themTotal = 0;
     int bet;
+    int betWinner;
     char winner; 
     int trumpSuit;
     std::map<int, card> trick_cards;
