@@ -320,6 +320,7 @@ class Game:
         self.meld_details = [[] for _ in range(4)]
         self.meld_cards = [[] for _ in range(4)]
         self.user_selected_meld_indices = []
+        self.humans_melded = set()
         self.phase = "bidding" 
         
         self.bidding_active = [False] * 4
@@ -380,7 +381,13 @@ class Game:
                         self.melds[i] = pts
                         self.meld_details[i] = details
                         self.meld_cards[i] = card_groups
-                self.phase = "meld_selection"
+                
+                human_active = any(self.is_human(j) for j in self.get_active_players())
+                if not human_active:
+                    self.phase = "meld_display"
+                    self.trick_leader = self.bid_winner
+                else:
+                    self.phase = "meld_selection"
             return
 
         active_players = self.get_active_players()
@@ -399,14 +406,19 @@ class Game:
             self.trump = trump
             self.add_log(f"Trump chosen: {Card.SUIT_MAP[self.trump]}")
             
-            for i in range(4):
-                if not self.is_human(i):
+            for i in self.get_active_players():
+                if self.is_ai(i):
                     pts, details, card_groups = MeldCounter.count_meld(self.hands[i], self.trump)
                     self.melds[i] = pts
                     self.meld_details[i] = details
                     self.meld_cards[i] = card_groups
             
-            self.phase = "meld_selection"
+            human_active = any(self.is_human(i) for i in self.get_active_players())
+            if not human_active:
+                self.phase = "meld_display"
+                self.trick_leader = self.bid_winner
+            else:
+                self.phase = "meld_selection"
 
     def confirm_user_meld(self, seat_index: int, selected_indices: List[int]):
         if self.phase == "meld_selection" and self.is_human(seat_index):
@@ -417,10 +429,9 @@ class Game:
             self.meld_cards[seat_index] = card_groups
             self.add_log(f"{self.get_player_name(seat_index)} melded {pts} points.")
             
-            if not hasattr(self, 'humans_melded'): self.humans_melded = set()
             self.humans_melded.add(seat_index)
             
-            human_seats = {i for i, s in enumerate(self.seat_assignments) if s is not None}
+            human_seats = {i for i in self.get_active_players() if self.is_human(i)}
             if self.humans_melded >= human_seats:
                 self.phase = "meld_display"
                 self.trick_leader = self.bid_winner
