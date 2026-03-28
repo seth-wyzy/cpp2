@@ -197,6 +197,7 @@ class Game:
         self.meld_details = [[] for _ in range(4)]
         self.meld_cards = [[] for _ in range(4)]
         self.user_selected_meld_indices = []
+        self.humans_melded = set()
         self.phase = "lobby"
         self.log = ["Waiting for players to join..."]
         self.current_trick = [] # Safety
@@ -317,6 +318,7 @@ class Game:
         self.tricks_played = 0
         self.us_trick_points = 0
         self.them_trick_points = 0
+        self.player_trick_points = [0] * 4
         self.meld_details = [[] for _ in range(4)]
         self.meld_cards = [[] for _ in range(4)]
         self.user_selected_meld_indices = []
@@ -420,7 +422,10 @@ class Game:
 
     def confirm_user_meld(self, seat_index: int, selected_indices: List[int]):
         if self.phase == "meld_selection" and self.is_human(seat_index):
-            selected_cards = [self.hands[seat_index][i] for i in selected_indices if i < len(self.hands[seat_index])]
+            # Ensure index is within hand range
+            valid_indices = [i for i in selected_indices if 0 <= i < len(self.hands[seat_index])]
+            selected_cards = [self.hands[seat_index][i] for i in valid_indices]
+            
             pts, details, card_groups = MeldCounter.count_meld(selected_cards, self.trump)
             self.melds[seat_index] = pts
             self.meld_details[seat_index] = details
@@ -429,60 +434,25 @@ class Game:
             
             self.humans_melded.add(seat_index)
             
-            human_seats = {i for i in self.get_active_players() if self.is_human(i)}
-            if self.humans_melded >= human_seats:
-                self.phase = "meld_display"
-                self.trick_leader = self.bid_winner
-                self.humans_melded = set()
-
-    def finalize_round(self):
-        us_round = self.melds[0] + self.melds[2] + getattr(self, 'us_trick_points', 0)
-        them_round = self.melds[1] + self.melds[3] + getattr(self, 'them_trick_points', 0)
-        
-        if self.bid_winner in [0, 2]:
-            if us_round >= self.bid: self.us_total += us_round
-            else: self.us_total -= self.bid
-            self.them_total += them_round
-        else:
-            if them_round >= self.bid: self.them_total += them_round
-            else: self.them_total -= self.bid
-            self.us_total += us_round
-        
-        self.phase = "round_end"
-        
-        if self.rounds_played_in_game == 4:
-            if self.us_total > self.them_total:
-                self.us_games += 1
-                self.add_log("US won the game!")
-            elif self.them_total > self.us_total:
-                self.them_games += 1
-                self.add_log("THEM won the game!")
-            else:
-                self.add_log("Game was a TIE!")
+            active_human_seats = {i for i in self.get_active_players() if self.is_human(i)}
             
-            if self.us_games == 2 or self.them_games == 2:
-                self.phase = "match_end"
-            else:
-                self.phase = "game_end"
-
-    def start_next_round(self):
-        if self.phase == "round_end":
-            self.dealer = (self.dealer + 1) % 4
-            self.reset_round()
-        elif self.phase == "game_end":
-            self.game_num += 1
-            self.rounds_played_in_game = 0
-            self.dealer = (self.dealer + 2) % 4
-            self.us_total = 0
-            self.them_total = 0
-            self.reset_round()
+            # Use >= to handle cases where a human might have left during the phase
+            if self.humans_melded >= active_human_seats:
+                self.phase = "meld_display"
+                self.add_log("All humans confirmed melds.")
+                self.trick_leader = self.bid_winner if self.bid_winner != -1 else self.dealer
+                self.humans_melded = set()
 
     def start_tricks(self):
         if self.phase == "meld_display":
             self.phase = "trick_taking"
 
     def play_card(self, player_idx: int, card_idx: int):
-        if self.phase != "trick_taking" or player_idx != (self.trick_leader + len(self.current_trick)) % 4:
+        active_players = self.get_active_players()
+        current_idx = (active_players.index(self.trick_leader) + len(self.current_trick)) % len(active_players)
+        curr_p = active_players[current_idx]
+
+        if self.phase != "trick_taking" or player_idx != curr_p:
             return
         
         card = self.hands[player_idx][card_idx]
@@ -492,8 +462,6 @@ class Game:
 
         self.hands[player_idx].pop(card_idx)
         self.current_trick.append({"player": player_idx, "card": card})
-        
-        # ai_play_one will be called by frontend timer
 
     def validate_move(self, player_idx: int, card: Card) -> Tuple[bool, str]:
         if not self.current_trick: return True, ""
@@ -545,7 +513,6 @@ class Game:
         active_players = self.get_active_players()
         if len(self.current_trick) != len(active_players): return
         
-        lead_suit = self.current_trick[0]["card"].suit
         winner_idx = 0
         best_card = self.current_trick[0]["card"]
         
@@ -564,7 +531,6 @@ class Game:
         # Points: A, 10, K are points
         pts = sum(1 for t in self.current_trick if t["card"].rank in [14, 15, 13])
         
-        if not hasattr(self, 'player_trick_points'): self.player_trick_points = [0] * 4
         self.player_trick_points[actual_winner] += pts
 
         if actual_winner in [0, 2]: self.us_trick_points += pts
@@ -584,8 +550,6 @@ class Game:
             self.finalize_round()
 
     def finalize_round(self):
-        if not hasattr(self, 'player_trick_points'): self.player_trick_points = [0] * 4
-        
         if self.game_mode == "5-card":
             for p in self.get_active_players():
                 round_score = self.melds[p] + self.player_trick_points[p]
@@ -606,8 +570,8 @@ class Game:
             else:
                 self.phase = "round_end"
         else:
-            us_round = self.melds[0] + self.melds[2] + getattr(self, 'us_trick_points', 0)
-            them_round = self.melds[1] + self.melds[3] + getattr(self, 'them_trick_points', 0)
+            us_round = self.melds[0] + self.melds[2] + self.us_trick_points
+            them_round = self.melds[1] + self.melds[3] + self.them_trick_points
             
             if self.bid_winner in [0, 2]:
                 if us_round >= self.bid: self.us_total += us_round
@@ -652,26 +616,6 @@ class Game:
             if self.game_mode == "5-card":
                 self.player_totals = [0, 0, 0, 0]
             self.reset_round()
-
-    def start_tricks(self):
-        if self.phase == "meld_display":
-            self.phase = "trick_taking"
-
-    def play_card(self, player_idx: int, card_idx: int):
-        active_players = self.get_active_players()
-        current_idx = (active_players.index(self.trick_leader) + len(self.current_trick)) % len(active_players)
-        curr_p = active_players[current_idx]
-
-        if self.phase != "trick_taking" or player_idx != curr_p:
-            return
-        
-        card = self.hands[player_idx][card_idx]
-        is_valid, msg = self.validate_move(player_idx, card)
-        if not is_valid:
-            raise ValueError(msg)
-
-        self.hands[player_idx].pop(card_idx)
-        self.current_trick.append({"player": player_idx, "card": card})
 
     def ai_play_one(self) -> bool:
         active_players = self.get_active_players()
