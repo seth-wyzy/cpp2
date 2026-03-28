@@ -8,3 +8,9 @@ conda run -n pinochle python pinochle_gui/backend/main.py
 
 cd pinochle_gui/frontend
 npm start
+
+
+
+npm run build
+
+
