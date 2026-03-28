@@ -68,8 +68,9 @@ function App() {
   const [selectedMeldIndices, setSelectedMeldIndices] = useState<number[]>([]);
   
   const host = window.location.host; // includes port if present
-  const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
-  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const protocol = window.location.protocol;
+  const isSecure = protocol === 'https:';
+  const wsProtocol = isSecure ? 'wss:' : 'ws:';
   
   const API_BASE = `${protocol}//${host}`;
   const WS_URL = `${wsProtocol}//${host}/ws`;
