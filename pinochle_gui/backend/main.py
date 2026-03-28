@@ -161,9 +161,24 @@ async def evaluate():
     return game.get_state()
 
 # Serve static files from the React build directory
-frontend_dir = os.path.join(os.path.dirname(__file__), "../frontend/build")
-if os.path.exists(frontend_dir):
+# We check multiple locations to be robust for different deployment environments
+possible_frontend_dirs = [
+    os.path.join(os.path.dirname(__file__), "../frontend/build"),
+    os.path.join(os.path.dirname(__file__), "static"),
+    "/app/frontend/build",
+]
+
+frontend_dir = None
+for d in possible_frontend_dirs:
+    if os.path.exists(d):
+        frontend_dir = d
+        break
+
+if frontend_dir:
+    print(f"Serving frontend from: {frontend_dir}")
     app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="static")
+else:
+    print("Warning: Frontend directory not found. API-only mode.")
 
 if __name__ == "__main__":
     import uvicorn
