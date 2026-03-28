@@ -560,17 +560,17 @@ function App() {
           {gameState.phase === 'bidding' && gameState.current_bidder === mySeat && (
             <div className="bidding-panel">
               <h3>Your Bid</h3>
-              <p>Current High: {gameState.bid === (gameState.game_mode === "5-card" ? 4 : 20) ? "None" : gameState.bid}</p>
+              <p>Current High: {gameState.bid === (gameState.game_mode === "5-card" ? 4 : 19) ? "None" : gameState.bid}</p>
               <div className="bid-buttons">
                 <button onClick={() => placeBid(0)} style={{background: '#e74c3c'}}>Pass</button>
-                <button onClick={() => placeBid(gameState.bid === (gameState.game_mode === "5-card" ? 4 : 20) ? (gameState.game_mode === "5-card" ? 5 : 21) : gameState.bid + 1)}>
-                  Bid {gameState.bid === (gameState.game_mode === "5-card" ? 4 : 20) ? (gameState.game_mode === "5-card" ? 5 : 21) : gameState.bid + 1}
+                <button onClick={() => placeBid(gameState.bid === (gameState.game_mode === "5-card" ? 4 : 19) ? (gameState.game_mode === "5-card" ? 5 : 20) : gameState.bid + 1)}>
+                  Bid {gameState.bid === (gameState.game_mode === "5-card" ? 4 : 19) ? (gameState.game_mode === "5-card" ? 5 : 20) : gameState.bid + 1}
                 </button>
               </div>
               <div className="custom-bid">
                 <input 
                   type="number" 
-                  min={gameState.bid === (gameState.game_mode === "5-card" ? 4 : 20) ? (gameState.game_mode === "5-card" ? 5 : 21) : gameState.bid + 1} 
+                  min={gameState.bid === (gameState.game_mode === "5-card" ? 4 : 19) ? (gameState.game_mode === "5-card" ? 5 : 20) : gameState.bid + 1} 
                   value={customBid} 
                   onChange={(e) => setCustomBid(parseInt(e.target.value))}
                 />

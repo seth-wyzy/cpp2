@@ -121,11 +121,11 @@ class AIPlayer:
         max_bid = self.bidding_meld + 10
         if game_mode == "5-card":
             max_bid = self.bidding_meld + 2 # Be conservative since less tricks
-            start_bid = 6
+            start_bid = 5
         else:
-            start_bid = 21
+            start_bid = 20
 
-        if current_high < start_bid - 1: # E.g., if current_high is 20, start_bid-1 is 20
+        if current_high < start_bid:
             if start_bid <= max_bid: return start_bid
             return 0 # Pass
         if current_high < max_bid:
@@ -305,7 +305,7 @@ class Game:
             self.players[p].start_round(self.hands[p])
         
         self.trump = -1
-        self.bid = 5 if self.game_mode == "5-card" else 20
+        self.bid = 4 if self.game_mode == "5-card" else 19
         self.bid_winner = -1
         self.current_trick = []
         
@@ -344,13 +344,11 @@ class Game:
             return
         
         name = self.get_player_name(player_idx)
-        min_start_bid = 5 if self.game_mode == "5-card" else 20
-        next_min_bid = min_start_bid + 1
 
         if bid_amount == 0:
             self.bidding_active[player_idx] = False
             self.add_log(f"{name} passed.")
-        elif bid_amount > self.bid or (self.bid == min_start_bid and bid_amount == next_min_bid):
+        elif bid_amount > self.bid:
             self.bid = bid_amount
             self.bid_winner = player_idx
             self.add_log(f"{name} bid {bid_amount}.")
