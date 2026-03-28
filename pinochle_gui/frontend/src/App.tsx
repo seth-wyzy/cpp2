@@ -125,9 +125,8 @@ function App() {
     socket.onclose = (event) => {
       console.warn("WebSocket closed. Code:", event.code, "Reason:", event.reason);
       if (!event.wasClean) {
-        setMessage("Connection lost unexpectedly. Attempting to reconnect...");
-        // Optional: Simple retry logic
-        setTimeout(() => window.location.reload(), 5000);
+        setMessage("Real-time connection lost. Using background polling...");
+        // Do NOT reload the page, as it wipes out local state (seat, username)
       }
     };
 
