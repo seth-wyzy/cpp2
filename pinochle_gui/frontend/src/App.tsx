@@ -67,12 +67,14 @@ function App() {
   const [message, setMessage] = useState<string | null>(null);
   const [selectedMeldIndices, setSelectedMeldIndices] = useState<number[]>([]);
   
-  const host = window.location.host; // includes port if present
+  const host = window.location.host;
   const protocol = window.location.protocol;
   const isSecure = protocol === 'https:';
   const wsProtocol = isSecure ? 'wss:' : 'ws:';
   
+  // Use relative-to-root URLs for everything
   const API_BASE = `${protocol}//${host}`;
+  // For WebSockets on Render/behind proxies, sometimes we need the full URL without any ambiguity
   const WS_URL = `${wsProtocol}//${host}/ws`;
   
   const ws = useRef<WebSocket | null>(null);
@@ -91,10 +93,11 @@ function App() {
   };
 
   useEffect(() => {
+    console.log("Attempting WebSocket connection to:", WS_URL);
     const socket = new WebSocket(WS_URL);
     
     socket.onopen = () => {
-      console.log("WebSocket connected");
+      console.log("WebSocket connected successfully to:", WS_URL);
       setMessage(null); // Clear connection error
       fetchState(); // Initial sync
     };
@@ -102,6 +105,7 @@ function App() {
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        console.log("WebSocket message received:", data.phase);
         setGameState(data);
       } catch (e) {
         console.error("Failed to parse socket data:", e);
@@ -109,12 +113,18 @@ function App() {
     };
 
     socket.onerror = (err) => {
-      console.error("WebSocket error:", err);
-      setMessage("Connection error. Is the backend running?");
+      console.error("WebSocket Error Event:", err);
+      // Detailed error info for the user
+      setMessage(`Connection error to ${WS_URL}. Check console for details.`);
     };
 
-    socket.onclose = () => {
-      console.log("WebSocket closed");
+    socket.onclose = (event) => {
+      console.warn("WebSocket closed. Code:", event.code, "Reason:", event.reason);
+      if (!event.wasClean) {
+        setMessage("Connection lost unexpectedly. Attempting to reconnect...");
+        // Optional: Simple retry logic
+        setTimeout(() => window.location.reload(), 5000);
+      }
     };
 
     ws.current = socket;
