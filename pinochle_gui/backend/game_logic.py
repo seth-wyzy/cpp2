@@ -37,31 +37,35 @@ class MeldCounter:
 
         # Run in trump: A 10 K Q J (15 14 13 12 11)
         run_ranks = [15, 14, 13, 12, 11]
+        has_run = False
         if all(suit_rank[trump][r] > 0 for r in run_ranks):
             meld_points += 15
             details.append("Run in Trump (+15)")
             meld_card_groups.append([Card(r, trump) for r in run_ranks])
+            has_run = True
 
         # Marriage
         for s in range(4):
             if suit_rank[s][13] > 0 and suit_rank[s][12] > 0:
                 pts = 4 if s == trump else 2
-                count = min(suit_rank[s][13], suit_rank[s][12])
-                # Simplified: just handle single and double marriage
-                for _ in range(count):
-                    actual_pts = pts * (2 if count > 1 and _ == 0 else 1) # This is a bit complex for manual, let's keep it simple
-                    # Actually rule is single = 2/4, double = 4/8. 
-                    pass 
                 
-                # Re-doing Marriage points logic correctly for single/double
-                if suit_rank[s][13] > 1 and suit_rank[s][12] > 1:
-                    meld_points += pts * 2
-                    details.append(f"Double Marriage in {Card.SUIT_MAP[s]} (+{pts*2})")
-                    meld_card_groups.append([Card(13, s), Card(13, s), Card(12, s), Card(12, s)])
-                else:
-                    meld_points += pts
-                    details.append(f"Marriage in {Card.SUIT_MAP[s]} (+{pts})")
-                    meld_card_groups.append([Card(13, s), Card(12, s)])
+                # If it's trump and we have a run, one marriage is already in the run
+                effective_kings = suit_rank[s][13]
+                effective_queens = suit_rank[s][12]
+                
+                if s == trump and has_run:
+                    effective_kings -= 1
+                    effective_queens -= 1
+                
+                if effective_kings > 0 and effective_queens > 0:
+                    if effective_kings > 1 and effective_queens > 1:
+                        meld_points += pts * 2
+                        details.append(f"Double Marriage in {Card.SUIT_MAP[s]} (+{pts*2})")
+                        meld_card_groups.append([Card(13, s), Card(13, s), Card(12, s), Card(12, s)])
+                    else:
+                        meld_points += pts
+                        details.append(f"Marriage in {Card.SUIT_MAP[s]} (+{pts})")
+                        meld_card_groups.append([Card(13, s), Card(12, s)])
 
         # Arounds
         arounds = {15: (10, "Aces"), 13: (8, "Kings"), 12: (6, "Queens"), 11: (4, "Jacks")}
@@ -388,6 +392,88 @@ class Game:
         self.current_trick.append({"player": player_idx, "card": card})
         
         # ai_play_one will be called by frontend timer
+
+    def validate_move(self, player_idx: int, card: Card) -> Tuple[bool, str]:
+        if not self.current_trick: return True, ""
+        
+        lead_card = self.current_trick[0]["card"]
+        hand = self.hands[player_idx]
+        
+        # Determine current winner and best card to beat
+        best_card = self.current_trick[0]["card"]
+        for t in self.current_trick[1:]:
+            c = t["card"]
+            if c.suit == best_card.suit:
+                if c.rank > best_card.rank: best_card = c
+            elif c.suit == self.trump:
+                if best_card.suit != self.trump or c.rank > best_card.rank:
+                    best_card = c
+
+        # Must follow suit
+        follow_suit = [c for c in hand if c.suit == lead_card.suit]
+        if follow_suit:
+            if card.suit != lead_card.suit:
+                return False, f"Must follow suit ({Card.SUIT_MAP[lead_card.suit]})"
+            
+            # If lead was trump, must try to beat best trump
+            if lead_card.suit == self.trump:
+                can_beat = [c for c in follow_suit if c.rank > best_card.rank]
+                if can_beat and card.rank <= best_card.rank:
+                    return False, "Must beat the current high trump"
+            
+            return True, ""
+            
+        # If cannot follow suit, must trump
+        trumps = [c for c in hand if c.suit == self.trump]
+        if trumps:
+            if card.suit != self.trump:
+                return False, "Must play trump if you cannot follow suit"
+            
+            # Must beat current high trump if possible
+            if best_card.suit == self.trump:
+                can_beat = [c for c in trumps if c.rank > best_card.rank]
+                if can_beat and card.rank <= best_card.rank:
+                    return False, "Must beat the current high trump"
+            
+            return True, ""
+            
+        return True, ""
+
+    def evaluate_trick(self):
+        if len(self.current_trick) != 4: return
+        
+        lead_suit = self.current_trick[0]["card"].suit
+        winner_idx = 0
+        best_card = self.current_trick[0]["card"]
+        
+        for i in range(1, 4):
+            c = self.current_trick[i]["card"]
+            if c.suit == best_card.suit:
+                if c.rank > best_card.rank:
+                    best_card = c
+                    winner_idx = i
+            elif c.suit == self.trump:
+                if best_card.suit != self.trump or c.rank > best_card.rank:
+                    best_card = c
+                    winner_idx = i
+        
+        actual_winner = self.current_trick[winner_idx]["player"]
+        # Points: A, 10, K are points
+        pts = sum(1 for t in self.current_trick if t["card"].rank in [14, 15, 13])
+        
+        if actual_winner in [0, 2]: self.us_trick_points += pts
+        else: self.them_trick_points += pts
+        
+        self.trick_leader = actual_winner
+        self.tricks_played += 1
+        self.add_log(f"{self.get_player_name(actual_winner)} won trick with {best_card} ({pts} pts).")
+        self.current_trick = []
+        
+        if self.tricks_played == 12:
+            # Last trick bonus
+            if actual_winner in [0, 2]: self.us_trick_points += 1
+            else: self.them_trick_points += 1
+            self.finalize_round()
 
     def ai_play_one(self) -> bool:
         if self.phase == "trick_taking" and len(self.current_trick) < 4:

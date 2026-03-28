@@ -67,11 +67,13 @@ function App() {
   const [message, setMessage] = useState<string | null>(null);
   const [selectedMeldIndices, setSelectedMeldIndices] = useState<number[]>([]);
   
-  const host = window.location.hostname || 'localhost';
-  // If we are on ngrok or a similar proxy, we might not have port 8000 visible directly
-  // Common pattern: if hostname contains 'ngrok', assume the backend is also proxied or at the same host
-  const isNgrok = host.includes('ngrok');
-  const API_BASE = isNgrok ? `${window.location.protocol}//${host}` : `http://${host}:8000`;
+  const host = window.location.host; // includes port if present
+  const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  
+  const API_BASE = `${protocol}//${host}`;
+  const WS_URL = `${wsProtocol}//${host}/ws`;
+  
   const ws = useRef<WebSocket | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
 
@@ -88,12 +90,11 @@ function App() {
   };
 
   useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = isNgrok ? `${protocol}//${host}/ws` : `${protocol}//${host}:8000/ws`;
-    const socket = new WebSocket(wsUrl);
+    const socket = new WebSocket(WS_URL);
     
     socket.onopen = () => {
       console.log("WebSocket connected");
+      setMessage(null); // Clear connection error
       fetchState(); // Initial sync
     };
 
@@ -376,6 +377,14 @@ function App() {
               <h3>Select Cards for Meld</h3>
               <p>Click cards in your hand that you want to meld.</p>
               <button onClick={confirmMeld} style={{width: '100%', padding: '15px', fontSize: '1.1em'}}>Confirm Meld</button>
+            </div>
+          )}
+
+          {gameState.phase === 'meld_display' && (
+            <div className="bidding-panel" style={{background: '#2980b9'}}>
+              <h3>Melds Displayed</h3>
+              <p>Review everyone's meld on the table.</p>
+              <button onClick={startTricks} style={{width: '100%', padding: '15px', fontSize: '1.1em'}}>Start Tricks</button>
             </div>
           )}
 

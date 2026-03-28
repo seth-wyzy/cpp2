@@ -1,8 +1,10 @@
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 import json
+import os
 from game_logic import Game
 
 app = FastAPI()
@@ -157,6 +159,11 @@ async def evaluate():
     game.evaluate_trick()
     await broadcast_state()
     return game.get_state()
+
+# Serve static files from the React build directory
+frontend_dir = os.path.join(os.path.dirname(__file__), "../frontend/build")
+if os.path.exists(frontend_dir):
+    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
