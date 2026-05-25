@@ -347,7 +347,7 @@ class Game:
         
         name = self.get_player_name(player_idx)
 
-        if bid_amount == 0:
+        if bid_amount == 0: 
             self.bidding_active[player_idx] = False
             self.add_log(f"{name} passed.")
         elif bid_amount > self.bid:
