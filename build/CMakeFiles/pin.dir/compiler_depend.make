@@ -3,6 +3,7 @@
 
 CMakeFiles/pin.dir/src/Pin.cpp.o: /home/seth/cpp2/src/Pin.cpp \
   /home/seth/cpp2/src/Pin.h \
+  /home/seth/cpp2/src/aiPlayer.h \
   /home/seth/cpp2/src/card.h \
   /usr/include/alloca.h \
   /usr/include/asm-generic/errno-base.h \
@@ -439,6 +440,7 @@ CMakeFiles/pin.dir/src/card.cpp.o: /home/seth/cpp2/src/card.cpp \
 
 CMakeFiles/pin.dir/src/main.cpp.o: /home/seth/cpp2/src/main.cpp \
   /home/seth/cpp2/src/Pin.h \
+  /home/seth/cpp2/src/aiPlayer.h \
   /home/seth/cpp2/src/card.h \
   /usr/include/alloca.h \
   /usr/include/asm-generic/errno-base.h \
@@ -721,8 +723,6 @@ CMakeFiles/pin.dir/src/main.cpp.o: /home/seth/cpp2/src/main.cpp \
 
 /usr/include/x86_64-linux-gnu/bits/types/cookie_io_functions_t.h:
 
-/usr/include/x86_64-linux-gnu/bits/types/clockid_t.h:
-
 /usr/include/x86_64-linux-gnu/bits/types/__sigset_t.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h:
@@ -829,8 +829,6 @@ CMakeFiles/pin.dir/src/main.cpp.o: /home/seth/cpp2/src/main.cpp \
 
 /usr/include/c++/13/tr1/legendre_function.tcc:
 
-/usr/include/c++/13/bits/stl_construct.h:
-
 /usr/include/x86_64-linux-gnu/sys/types.h:
 
 /usr/include/c++/13/bits/random.h:
@@ -873,10 +871,6 @@ CMakeFiles/pin.dir/src/main.cpp.o: /home/seth/cpp2/src/main.cpp \
 
 /usr/include/c++/13/bits/invoke.h:
 
-/usr/include/c++/13/bits/stl_bvector.h:
-
-/usr/include/c++/13/bits/allocator.h:
-
 /usr/include/x86_64-linux-gnu/bits/mathcalls.h:
 
 /usr/include/c++/13/bits/locale_classes.h:
@@ -898,6 +892,18 @@ CMakeFiles/pin.dir/src/main.cpp.o: /home/seth/cpp2/src/main.cpp \
 /usr/include/c++/13/bits/basic_ios.h:
 
 /usr/include/c++/13/bits/nested_exception.h:
+
+/usr/include/x86_64-linux-gnu/bits/math-vector.h:
+
+/usr/include/c++/13/bits/hash_bytes.h:
+
+/usr/include/asm-generic/errno-base.h:
+
+/usr/include/features-time64.h:
+
+/usr/include/c++/13/string_view:
+
+/usr/include/c++/13/algorithm:
 
 /usr/include/x86_64-linux-gnu/c++/13/bits/os_defines.h:
 
@@ -921,19 +927,17 @@ CMakeFiles/pin.dir/src/main.cpp.o: /home/seth/cpp2/src/main.cpp \
 
 /usr/include/c++/13/cwchar:
 
-/usr/include/asm-generic/errno-base.h:
-
-/usr/include/x86_64-linux-gnu/bits/math-vector.h:
-
-/usr/include/c++/13/bits/hash_bytes.h:
-
-/usr/include/features-time64.h:
-
-/usr/include/c++/13/string_view:
-
 /usr/include/c++/13/debug/debug.h:
 
 /usr/include/c++/13/stdexcept:
+
+/usr/include/c++/13/bits/stl_bvector.h:
+
+/usr/include/c++/13/bits/allocator.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/clockid_t.h:
+
+/home/seth/cpp2/src/aiPlayer.h:
 
 /usr/include/c++/13/bits/locale_facets.tcc:
 
@@ -991,11 +995,9 @@ CMakeFiles/pin.dir/src/main.cpp.o: /home/seth/cpp2/src/main.cpp \
 
 /usr/include/c++/13/bits/cxxabi_init_exception.h:
 
-/usr/include/c++/13/algorithm:
+/usr/include/c++/13/bits/istream.tcc:
 
 /usr/include/c++/13/bits/stl_multimap.h:
-
-/usr/include/c++/13/bits/istream.tcc:
 
 /usr/include/c++/13/bits/exception_ptr.h:
 
@@ -1006,6 +1008,8 @@ CMakeFiles/pin.dir/src/main.cpp.o: /home/seth/cpp2/src/main.cpp \
 /usr/include/x86_64-linux-gnu/bits/fp-logb.h:
 
 /usr/include/c++/13/bits/algorithmfwd.h:
+
+/usr/include/c++/13/bits/stl_construct.h:
 
 /usr/include/c++/13/bits/stl_heap.h:
 

@@ -4,6 +4,7 @@
 CMakeFiles/pin.dir/src/Pin.cpp.o
  /home/seth/cpp2/src/Pin.cpp
  /home/seth/cpp2/src/Pin.h
+ /home/seth/cpp2/src/aiPlayer.h
  /home/seth/cpp2/src/card.h
  /usr/include/alloca.h
  /usr/include/asm-generic/errno-base.h
@@ -442,6 +443,7 @@ CMakeFiles/pin.dir/src/card.cpp.o
 CMakeFiles/pin.dir/src/main.cpp.o
  /home/seth/cpp2/src/main.cpp
  /home/seth/cpp2/src/Pin.h
+ /home/seth/cpp2/src/aiPlayer.h
  /home/seth/cpp2/src/card.h
  /usr/include/alloca.h
  /usr/include/asm-generic/errno-base.h

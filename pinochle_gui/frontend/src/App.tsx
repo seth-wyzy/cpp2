@@ -75,6 +75,7 @@ function App() {
   const [customBid, setCustomBid] = useState<number>(21);
   const [message, setMessage] = useState<string | null>(null);
   const [selectedMeldIndices, setSelectedMeldIndices] = useState<number[]>([]);
+  const [isLogOpen, setIsLogOpen] = useState(false);
   
   const host = window.location.host;
   const protocol = window.location.protocol;
@@ -130,6 +131,15 @@ function App() {
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        if (data.type === "ping") {
+          return;
+        }
+        if (!Array.isArray(data.seat_assignments) || !Array.isArray(data.active_players) ||
+            !Array.isArray(data.hands) || !Array.isArray(data.meld_cards) ||
+            !Array.isArray(data.current_trick) || !Array.isArray(data.log)) {
+          console.warn("Ignoring incomplete WebSocket state:", data);
+          return;
+        }
         console.log("WebSocket message received:", data.phase);
         setGameState(data);
       } catch (e) {
@@ -366,7 +376,7 @@ function App() {
     return (
       <div className="game-container">
         <h1>Pinochle Lobby</h1>
-        <div className="bidding-panel" style={{width: 500}}>
+        <div className="bidding-panel" style={{maxWidth: 500}}>
           {gameState.phase === 'lobby' && (
             <div style={{marginBottom: 20}}>
               <h3>Game Mode</h3>
@@ -386,10 +396,10 @@ function App() {
             placeholder="Your Name" 
             value={myUsername} 
             onChange={(e) => setMyUsername(e.target.value)}
-            style={{width: '90%', padding: 10, marginBottom: 20, fontSize: '1.2em'}}
+            style={{width: '100%', padding: 10, marginBottom: 20, fontSize: '1.2em'}}
           />
           <h3>Select a Seat</h3>
-          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10}}>
+          <div className="lobby-list">
             {[0, 1, 2, 3].map(i => {
               const occupant = gameState.seat_assignments[i];
               const isMe = occupant === myUsername;
@@ -397,12 +407,14 @@ function App() {
               const isEmpty = occupant === null;
               
               return (
-                <div key={i} style={{display: 'flex', flexDirection: 'column', gap: 5}}>
+                <div key={i} style={{display: 'flex', flexDirection: 'column', gap: 5, width: '100%'}}>
                   <button 
                     onClick={() => joinGame(i)} 
                     disabled={!isEmpty && !isMe}
                     style={{
-                      padding: '15px 5px', 
+                      padding: '20px 10px', 
+                      width: '100%',
+                      fontSize: '1.2em',
                       background: isMe ? '#3498db' : (isEmpty ? '#27ae60' : '#7f8c8d'),
                       opacity: (!isEmpty && !isMe) ? 0.7 : 1
                     }}
@@ -411,10 +423,10 @@ function App() {
                     {occupant ? ` (${occupant})` : ''}
                   </button>
                   {gameState.phase === 'lobby' && (
-                    <>
-                      {isEmpty && <button onClick={() => toggleAI(i, 'add')} style={{background: '#8e44ad', padding: '5px', fontSize: '0.8em'}}>Add AI</button>}
-                      {isAI && <button onClick={() => toggleAI(i, 'remove')} style={{background: '#e67e22', padding: '5px', fontSize: '0.8em'}}>Remove AI</button>}
-                    </>
+                    <div style={{display: 'flex', gap: 10}}>
+                      {isEmpty && <button onClick={() => toggleAI(i, 'add')} style={{background: '#8e44ad', padding: '10px', flex: 1}}>Add AI</button>}
+                      {isAI && <button onClick={() => toggleAI(i, 'remove')} style={{background: '#e67e22', padding: '10px', flex: 1}}>Remove AI</button>}
+                    </div>
                   )}
                 </div>
               );
@@ -446,6 +458,88 @@ function App() {
   const isMyTurnToPlay = gameState.phase === 'trick_taking' && 
                          activePlayers[(activePlayers.indexOf(gameState.trick_leader) + gameState.current_trick.length) % activePlayers.length] === mySeat;
 
+  const renderActionPanel = () => {
+    if (gameState.phase === 'meld_selection' && mySeat !== null) {
+      return (
+        <div className="bidding-panel" style={{background: '#8e44ad'}}>
+          <h3>Select Cards for Meld</h3>
+          <p>Click cards in your hand that you want to meld.</p>
+          <button onClick={confirmMeld} style={{width: '100%', padding: '15px', fontSize: '1.1em'}}>Confirm Meld</button>
+        </div>
+      );
+    }
+
+    if (gameState.phase === 'meld_display') {
+      return (
+        <div className="bidding-panel" style={{background: '#2980b9'}}>
+          <h3>Melds Displayed</h3>
+          <p>Review everyone's meld on the table.</p>
+          <button onClick={startTricks} style={{width: '100%', padding: '15px', fontSize: '1.1em'}}>Start Tricks</button>
+        </div>
+      );
+    }
+
+    if (gameState.current_trick.length === activePlayers.length) {
+      return (
+        <div className="bidding-panel" style={{background: '#27ae60'}}>
+          <h3>Trick Complete</h3>
+          <button onClick={evaluateTrick} style={{width: '100%', padding: '15px', fontSize: '1.1em'}}>Collect Trick</button>
+        </div>
+      );
+    }
+
+    if (gameState.phase === 'bidding' && gameState.current_bidder === mySeat) {
+      return (
+        <div className="bidding-panel">
+          <h3>Your Bid</h3>
+          <p>Current High: {gameState.bid === (gameState.game_mode === "5-card" ? 4 : 19) ? "None" : gameState.bid}</p>
+          <div className="bid-buttons">
+            <button onClick={() => placeBid(0)} style={{background: '#e74c3c'}}>Pass</button>
+            <button onClick={() => placeBid(gameState.bid === (gameState.game_mode === "5-card" ? 4 : 19) ? (gameState.game_mode === "5-card" ? 5 : 20) : gameState.bid + 1)}>
+              Bid {gameState.bid === (gameState.game_mode === "5-card" ? 4 : 19) ? (gameState.game_mode === "5-card" ? 5 : 20) : gameState.bid + 1}
+            </button>
+          </div>
+          <div className="custom-bid">
+            <input 
+              type="number" 
+              min={gameState.bid === (gameState.game_mode === "5-card" ? 4 : 19) ? (gameState.game_mode === "5-card" ? 5 : 20) : gameState.bid + 1} 
+              value={customBid} 
+              onChange={(e) => setCustomBid(parseInt(e.target.value))}
+            />
+            <button onClick={() => placeBid(customBid)}>Bid</button>
+          </div>
+        </div>
+      );
+    }
+
+    if (gameState.phase === 'trump_selection' && gameState.bid_winner === mySeat) {
+      return (
+        <div className="bidding-panel">
+          <h3>Select Trump</h3>
+          <div className="trump-buttons">
+            {Object.entries(SUIT_ICONS).map(([suit, icon]) => (
+              <button key={suit} onClick={() => selectTrump(parseInt(suit))} style={{fontSize: '1.2em', padding: '10px'}}>
+                {icon}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (gameState.phase === 'round_end' || gameState.phase === 'game_end') {
+      return (
+        <button onClick={() => nextRound()} style={{width: '100%', padding: 20, fontSize: '1.2em', background: '#f39c12'}}>
+          {gameState.phase === 'round_end' ? "Start Next Round" : "Start Next Game"}
+        </button>
+      );
+    }
+
+    return null;
+  };
+
+  const actionPanel = renderActionPanel();
+
   return (
     <div className="game-container">
       <div className="scoreboard">
@@ -475,6 +569,11 @@ function App() {
 
       <div className="game-layout">
         <div className="main-area">
+          {actionPanel && (
+            <div className="action-container action-mobile">
+              {actionPanel}
+            </div>
+          )}
           <div className="table-area">
             <div className="phase-indicator">{gameState.phase.replace('_', ' ').toUpperCase()}</div>
             
@@ -525,6 +624,11 @@ function App() {
         </div>
 
         <div className="side-panel">
+          {actionPanel && (
+            <div className="action-container action-desktop">
+              {actionPanel}
+            </div>
+          )}
           <div className="game-log">
             <strong>Game Log</strong>
             {gameState.log.map((entry, i) => (
@@ -533,98 +637,50 @@ function App() {
             <div ref={logEndRef} />
           </div>
 
-          {gameState.phase === 'meld_selection' && (
-            <div className="bidding-panel" style={{background: '#8e44ad'}}>
-              <h3>Select Cards for Meld</h3>
-              <p>Click cards in your hand that you want to meld.</p>
-              <button onClick={confirmMeld} style={{width: '100%', padding: '15px', fontSize: '1.1em'}}>Confirm Meld</button>
-            </div>
-          )}
-
-          {gameState.phase === 'meld_display' && (
-            <div className="bidding-panel" style={{background: '#2980b9'}}>
-              <h3>Melds Displayed</h3>
-              <p>Review everyone's meld on the table.</p>
-              <button onClick={startTricks} style={{width: '100%', padding: '15px', fontSize: '1.1em'}}>Start Tricks</button>
-            </div>
-          )}
-
-          {gameState.current_trick.length === activePlayers.length && (
-            <div className="bidding-panel" style={{background: '#27ae60'}}>
-              <h3>Trick Complete</h3>
-              <button onClick={evaluateTrick} style={{width: '100%', padding: '15px', fontSize: '1.1em'}}>Collect Trick</button>
-            </div>
-          )}
-
-          {gameState.phase === 'bidding' && gameState.current_bidder === mySeat && (
-            <div className="bidding-panel">
-              <h3>Your Bid</h3>
-              <p>Current High: {gameState.bid === (gameState.game_mode === "5-card" ? 4 : 19) ? "None" : gameState.bid}</p>
-              <div className="bid-buttons">
-                <button onClick={() => placeBid(0)} style={{background: '#e74c3c'}}>Pass</button>
-                <button onClick={() => placeBid(gameState.bid === (gameState.game_mode === "5-card" ? 4 : 19) ? (gameState.game_mode === "5-card" ? 5 : 20) : gameState.bid + 1)}>
-                  Bid {gameState.bid === (gameState.game_mode === "5-card" ? 4 : 19) ? (gameState.game_mode === "5-card" ? 5 : 20) : gameState.bid + 1}
-                </button>
-              </div>
-              <div className="custom-bid">
-                <input 
-                  type="number" 
-                  min={gameState.bid === (gameState.game_mode === "5-card" ? 4 : 19) ? (gameState.game_mode === "5-card" ? 5 : 20) : gameState.bid + 1} 
-                  value={customBid} 
-                  onChange={(e) => setCustomBid(parseInt(e.target.value))}
-                />
-                <button onClick={() => placeBid(customBid)}>Bid</button>
-              </div>
-            </div>
-          )}
-
-          {gameState.phase === 'trump_selection' && gameState.bid_winner === mySeat && (
-            <div className="bidding-panel">
-              <h3>Select Trump</h3>
-              <div className="trump-buttons">
-                {Object.entries(SUIT_ICONS).map(([suit, icon]) => (
-                  <button key={suit} onClick={() => selectTrump(parseInt(suit))} style={{fontSize: '1.2em', padding: '10px'}}>
-                    {icon}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {(gameState.phase === 'round_end' || gameState.phase === 'game_end') && (
-             <button onClick={() => nextRound()} style={{width: '100%', padding: 20, fontSize: '1.2em', background: '#f39c12'}}>
-               {gameState.phase === 'round_end' ? "Start Next Round" : "Start Next Game"}
-             </button>
-          )}
-
-          {gameState.phase === 'match_end' && (
-            <div className="modal-overlay" style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 300}}>
-               <div className="modal-content">
-                  <h1>MATCH OVER!</h1>
-                  {gameState.game_mode === 'standard' ? (
-                    <>
-                      <h2>{gameState.us_games > gameState.them_games ? "YOU WON THE MATCH!" : "THEM WON THE MATCH!"}</h2>
-                      <p>Final Match Score: {gameState.us_games} - {gameState.them_games}</p>
-                    </>
-                  ) : (
-                    <>
-                      <h2>Game Over!</h2>
-                      <p>Final Scores:</p>
-                      {gameState.active_players.map(p => (
-                        <p key={p}>{gameState.player_names[p]}: {gameState.player_totals[p]}</p>
-                      ))}
-                    </>
-                  )}
-                  <button onClick={startNewGame} style={{padding: '20px 40px', fontSize: '1.5em'}}>Play Again</button>
-               </div>
-            </div>
-          )}
-
           <div style={{marginTop: 'auto', paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 10}}>
             <button onClick={leaveSeat} style={{background: '#7f8c8d', width: '100%'}}>Leave Seat / Lobby</button>
             <button onClick={resetServer} style={{background: '#c0392b', width: '100%', fontSize: '0.8em'}}>Reset Server (Clear All)</button>
           </div>
         </div>
+
+        {/* Mobile Log Controls */}
+        <button className="log-toggle-btn" onClick={() => setIsLogOpen(!isLogOpen)}>
+          {isLogOpen ? "✖" : "📜"}
+        </button>
+        {isLogOpen && (
+          <div className="mobile-log-container">
+             <div className="game-log" style={{height: '100%'}}>
+                <strong>Game Log</strong>
+                {gameState.log.map((entry, i) => (
+                  <div key={i} className="log-entry">{entry}</div>
+                ))}
+                <div ref={logEndRef} />
+              </div>
+          </div>
+        )}
+
+        {gameState.phase === 'match_end' && (
+          <div className="modal-overlay" style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000}}>
+             <div className="modal-content">
+                <h1>MATCH OVER!</h1>
+                {gameState.game_mode === 'standard' ? (
+                  <>
+                    <h2>{gameState.us_games > gameState.them_games ? "YOU WON THE MATCH!" : "THEM WON THE MATCH!"}</h2>
+                    <p>Final Match Score: {gameState.us_games} - {gameState.them_games}</p>
+                  </>
+                ) : (
+                  <>
+                    <h2>Game Over!</h2>
+                    <p>Final Scores:</p>
+                    {gameState.active_players.map(p => (
+                      <p key={p}>{gameState.player_names[p]}: {gameState.player_totals[p]}</p>
+                    ))}
+                  </>
+                )}
+                <button onClick={startNewGame} style={{padding: '20px 40px', fontSize: '1.5em'}}>Play Again</button>
+             </div>
+          </div>
+        )}
       </div>
     </div>
   );

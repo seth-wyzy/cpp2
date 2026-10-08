@@ -2,30 +2,38 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: #2c3e50;
+  width: 100%;
   min-height: 100vh;
-  color: white;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 0;
+  margin: 0;
+  overflow-x: hidden;
+  background-color: #2c3e50;
 }
 
 .scoreboard {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 20px;
-  background: rgba(0,0,0,0.3);
-  padding: 10px 20px;
-  border-radius: 0 0 10px 10px;
+  background: rgba(0,0,0,0.5);
+  padding: 15px 20px;
+  border-radius: 0 0 15px 15px;
   margin-bottom: 20px;
+  font-size: 1em;
+  width: 100%;
+  z-index: 10;
 }
 
 .table-area {
   position: relative;
-  width: 800px;
-  height: 500px;
+  width: 95%;
+  max-width: 900px; /* Slightly larger for desktop */
+  aspect-ratio: 16 / 10;
   background: radial-gradient(#27ae60, #1e8449);
-  border: 10px solid #5d4037;
+  border: 12px solid #5d4037;
   border-radius: 200px;
-  margin: 20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  margin: 20px auto;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.6);
 }
 
 .player-position {
@@ -33,20 +41,24 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  font-size: 1em;
+  font-weight: bold;
+  text-shadow: 2px 2px 4px black;
+  z-index: 5;
 }
 
-.north { top: 20px; left: 50%; transform: translateX(-50%); }
-.east { right: 20px; top: 50%; transform: translateY(-50%); }
-.west { left: 20px; top: 50%; transform: translateY(-50%); }
-.south { bottom: 20px; left: 50%; transform: translateX(-50%); }
+.north { top: 5%; left: 50%; transform: translateX(-50%); }
+.east { right: 5%; top: 50%; transform: translateY(-50%); }
+.west { left: 5%; top: 50%; transform: translateY(-50%); }
+.south { bottom: 5%; left: 50%; transform: translateX(-50%); }
 
 .trick-area {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 250px;
-  height: 250px;
+  width: 300px;
+  height: 300px;
 }
 
 .trick-card-wrapper {
@@ -59,46 +71,51 @@
 .west-card { left: 0; top: 50%; transform: translateY(-50%); }
 
 .card {
-  width: 70px;
-  height: 100px;
+  width: 80px; /* Back to large for desktop */
+  height: 115px;
   background: white;
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   color: black;
   font-weight: bold;
-  box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+  box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
   user-select: none;
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
 }
 
 .card:hover {
   transform: translateY(-10px);
-  z-index: 10;
+  z-index: 20;
+  box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
 }
 
 .card.red { color: #e74c3c; }
 .card.black { color: #2c3e50; }
 
-.suit-icon { font-size: 24px; }
-.rank-text { font-size: 18px; }
+.suit-icon { font-size: 28px; }
+.rank-text { font-size: 20px; }
 
 .hand {
   display: flex;
-  gap: -20px; /* Overlap cards slightly */
+  gap: -25px;
   margin-top: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .game-layout {
   display: flex;
-  gap: 20px;
-  padding: 20px;
-  max-width: 1200px;
+  flex-direction: row;
+  justify-content: center;
+  gap: 40px;
+  padding: 30px;
   width: 100%;
+  max-width: 1600px;
 }
 
 .main-area {
@@ -106,110 +123,184 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
 }
 
 .side-panel {
-  width: 250px;
+  width: 350px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 25px;
 }
 
 .game-log {
-  background: rgba(0,0,0,0.4);
-  padding: 15px;
-  border-radius: 10px;
-  height: 300px;
+  background: rgba(0,0,0,0.5);
+  padding: 20px;
+  border-radius: 12px;
+  height: 500px;
   overflow-y: auto;
-  font-size: 0.9em;
+  font-size: 1em;
   text-align: left;
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
 .log-entry {
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   border-bottom: 1px solid rgba(255,255,255,0.1);
-  padding-bottom: 2px;
+  padding-bottom: 4px;
 }
 
 .bidding-panel {
   background: #34495e;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
-.custom-bid {
-  margin-top: 15px;
+.action-container {
+  width: 100%;
+  margin-bottom: 30px;
+  z-index: 100;
+}
+
+.lobby-list {
   display: flex;
-  gap: 5px;
-}
-
-.meld-on-table {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  max-width: 300px;
-  justify-content: center;
-  margin-top: 5px;
-  background: rgba(255,255,255,0.1);
-  padding: 5px;
-  border-radius: 5px;
-}
-
-.meld-on-table.vertical {
   flex-direction: column;
-  max-height: 300px;
+  gap: 15px;
+  width: 100%;
 }
 
 .card.dimmed {
-  opacity: 0.7;
+  opacity: 0.6;
   transform: scale(0.8);
 }
 
 .card.selected {
-  border: 3px solid #f1c40f;
-}
-
-.modal-content {
-  background: #34495e;
-  padding: 30px;
-  border-radius: 15px;
-  text-align: center;
-  box-shadow: 0 0 20px rgba(0,0,0,0.5);
-}
-
-.bid-buttons, .trump-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 20px;
+  border: 4px solid #f1c40f;
+  box-shadow: 0 0 15px #f1c40f;
+  transform: translateY(-20px);
 }
 
 button {
-  padding: 10px 20px;
-  border-radius: 5px;
+  padding: 12px 24px;
+  border-radius: 8px;
   border: none;
   background: #3498db;
   color: white;
   cursor: pointer;
   font-weight: bold;
+  transition: background 0.2s;
 }
 
 button:hover { background: #2980b9; }
 
-.meld-item {
-  text-align: left;
-  margin: 5px 0;
-  font-size: 0.9em;
-}
-
 .phase-indicator {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(243, 156, 18, 0.8);
-  padding: 5px 15px;
-  border-radius: 20px;
+  top: 15px;
+  right: 15px;
+  background: rgba(243, 156, 18, 0.95);
+  padding: 8px 20px;
+  border-radius: 25px;
   font-weight: bold;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.action-mobile {
+  display: none;
+}
+
+.action-desktop {
+  display: block;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 1000px) {
+  .game-layout {
+    flex-direction: column;
+    padding: 15px;
+    gap: 20px;
+  }
+
+  .side-panel {
+    display: none;
+  }
+
+  .main-area {
+    width: 100%;
+  }
+
+  .table-area {
+    width: 100%;
+    margin-top: 110px; /* Space for top-fixed action panel */
+    border-radius: 120px;
+    border-width: 8px;
+  }
+
+  .card {
+    width: 50px;
+    height: 70px;
+    border-radius: 5px;
+  }
+  
+  .suit-icon { font-size: 18px; }
+  .rank-text { font-size: 14px; }
+
+  .action-mobile {
+    display: block;
+    position: fixed;
+    top: 65px; /* Below fixed scoreboard */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 95%;
+    max-width: 450px;
+    z-index: 1000;
+  }
+
+  .action-desktop {
+    display: none;
+  }
+
+  .scoreboard {
+    position: fixed;
+    top: 0;
+    margin-bottom: 0;
+    font-size: 0.8em;
+    padding: 10px;
+  }
+
+  .log-toggle-btn {
+    display: flex;
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    z-index: 1100;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.8em;
+    background: #3498db;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+  }
+
+  .mobile-log-container {
+    position: fixed;
+    bottom: 100px;
+    right: 25px;
+    width: 90%;
+    max-width: 350px;
+    height: 350px;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 30px rgba(0,0,0,0.7);
+  }
+}
+
+@media (min-width: 1001px) {
+  .log-toggle-btn {
+    display: none;
+  }
 }
